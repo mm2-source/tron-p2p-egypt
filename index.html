@@ -21,7 +21,6 @@
 </head>
 <body class="bg-gray-50">
 
-<!-- Navbar -->
 <nav class="bg-white border-b sticky top-0 z-50">
     <div class="flex justify-between items-center p-4">
         <div class="flex items-center gap-3">
@@ -34,18 +33,14 @@
     </div>
 </nav>
 
-<!-- P2P Market Page -->
 <div id="p2pPage" class="page page-active px-4 pt-4">
     <div class="flex border-b border-gray-200">
-        <button onclick="setMarket('buy', this)" id="buyTab" 
-                class="tab-btn active flex-1 text-center">شراء USDT</button>
-        <button onclick="setMarket('sell', this)" id="sellTab" 
-                class="tab-btn flex-1 text-center">بيع USDT</button>
+        <button onclick="setMarket('buy', this)" id="buyTab" class="tab-btn active flex-1 text-center">شراء USDT</button>
+        <button onclick="setMarket('sell', this)" id="sellTab" class="tab-btn flex-1 text-center">بيع USDT</button>
     </div>
     <div id="marketList" class="mt-6 space-y-5"></div>
 </div>
 
-<!-- Create Ad Page -->
 <div id="createPage" class="page px-4 pt-4">
     <div class="flex items-center gap-4 mb-8">
         <i onclick="showPage('p2p')" class="fa-solid fa-arrow-right text-2xl cursor-pointer"></i>
@@ -54,23 +49,17 @@
 
     <div class="space-y-6">
         <div class="flex bg-gray-100 p-1 rounded-3xl">
-            <button id="formBuyBtn" onclick="setFormType('buy')" 
-                    class="flex-1 py-4 rounded-3xl font-bold bg-white shadow-sm">شراء</button>
-            <button id="formSellBtn" onclick="setFormType('sell')" 
-                    class="flex-1 py-4 rounded-3xl font-bold text-gray-400">بيع</button>
+            <button id="formBuyBtn" onclick="setFormType('buy')" class="flex-1 py-4 rounded-3xl font-bold bg-white shadow-sm">شراء</button>
+            <button id="formSellBtn" onclick="setFormType('sell')" class="flex-1 py-4 rounded-3xl font-bold text-gray-400">بيع</button>
         </div>
 
-        <input id="priceInput" type="number" step="0.01" placeholder="السعر بالجنيه المصري (EGP)" 
-               class="w-full p-5 bg-white rounded-3xl text-2xl font-bold outline-none border border-gray-100">
+        <input id="priceInput" type="number" step="0.01" placeholder="السعر بالجنيه المصري (EGP)" class="w-full p-5 bg-white rounded-3xl text-2xl font-bold outline-none border border-gray-100">
 
-        <input id="amountInput" type="number" step="0.01" placeholder="الكمية بالـ USDT" 
-               class="w-full p-5 bg-white rounded-3xl text-2xl font-bold outline-none border border-gray-100">
+        <input id="amountInput" type="number" step="0.01" placeholder="الكمية بالـ USDT" class="w-full p-5 bg-white rounded-3xl text-2xl font-bold outline-none border border-gray-100">
 
         <div class="grid grid-cols-2 gap-4">
-            <input id="minInput" type="number" placeholder="الحد الأدنى (EGP)" 
-                   class="p-5 bg-white rounded-3xl outline-none border border-gray-100">
-            <input id="maxInput" type="number" placeholder="الحد الأقصى (EGP)" 
-                   class="p-5 bg-white rounded-3xl outline-none border border-gray-100">
+            <input id="minInput" type="number" placeholder="الحد الأدنى (EGP)" class="p-5 bg-white rounded-3xl outline-none border border-gray-100">
+            <input id="maxInput" type="number" placeholder="الحد الأقصى (EGP)" class="p-5 bg-white rounded-3xl outline-none border border-gray-100">
         </div>
 
         <select id="paymentMethod" class="w-full p-5 bg-white rounded-3xl outline-none border border-gray-100 font-medium">
@@ -79,26 +68,21 @@
             <option value="Bank">تحويل بنكي</option>
         </select>
 
-        <button onclick="createAd()" 
-                class="w-full okx-bg-green py-6 rounded-3xl font-bold text-lg shadow-lg active:scale-95 transition">
+        <button onclick="createAd()" class="w-full okx-bg-green py-6 rounded-3xl font-bold text-lg shadow-lg active:scale-95 transition">
             نشر الإعلان الآن
         </button>
     </div>
 </div>
 
-<!-- Bottom Navigation -->
 <div class="fixed bottom-0 left-0 right-0 bg-white border-t py-3 z-50 flex justify-around">
     <div onclick="showPage('p2p')" class="nav-item active flex flex-col items-center">
-        <i class="fa-solid fa-house text-2xl mb-1"></i>
-        <span>السوق</span>
+        <i class="fa-solid fa-house text-2xl mb-1"></i><span>السوق</span>
     </div>
     <div onclick="showPage('ads')" class="nav-item flex flex-col items-center">
-        <i class="fa-solid fa-bullhorn text-2xl mb-1"></i>
-        <span>إعلاناتي</span>
+        <i class="fa-solid fa-bullhorn text-2xl mb-1"></i><span>إعلاناتي</span>
     </div>
     <div onclick="showPage('orders')" class="nav-item flex flex-col items-center">
-        <i class="fa-solid fa-receipt text-2xl mb-1"></i>
-        <span>طلباتي</span>
+        <i class="fa-solid fa-receipt text-2xl mb-1"></i><span>طلباتي</span>
     </div>
 </div>
 
