@@ -1,8 +1,7 @@
-// src/js/tron.js
 export let tronWebInstance = null;
 export let currentUserAddress = null;
 
-const USDT_ADDRESS = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"; // USDT TRC20
+const USDT_ADDRESS = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";
 
 export async function connectWallet() {
     if (typeof window.tronLink === "undefined") {
@@ -17,7 +16,6 @@ export async function connectWallet() {
 
         const balance = await getUSDTBalance(currentUserAddress);
 
-        // تحديث شريط المحفظة
         const walletEl = document.getElementById("walletStatus");
         walletEl.innerHTML = `
             \( {currentUserAddress.substring(0, 6)}... \){currentUserAddress.substring(currentUserAddress.length - 4)}
@@ -33,21 +31,19 @@ export async function connectWallet() {
 
         return true;
     } catch (err) {
-        console.error(err);
-        Swal.fire("فشل الربط", err.message || "حدث خطأ أثناء الاتصال", "error");
+        Swal.fire("فشل الربط", err.message || "حدث خطأ", "error");
         return false;
     }
 }
 
 export async function getUSDTBalance(address) {
     if (!tronWebInstance) return 0;
-
     try {
         const contract = await tronWebInstance.contract().at(USDT_ADDRESS);
         const balanceHex = await contract.balanceOf(address).call();
-        return Number(balanceHex) / 1_000_000; // USDT لديه 6 أرقام عشرية
+        return Number(balanceHex) / 1000000;
     } catch (error) {
-        console.error("خطأ في جلب رصيد USDT:", error);
+        console.error("خطأ في جلب الرصيد:", error);
         return 0;
     }
 }
