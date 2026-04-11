@@ -8,97 +8,91 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=IBM+Plex+Sans+Arabic:wght@400;700&display=swap');
-        body { background-color: #ffffff; font-family: 'IBM Plex Sans Arabic', sans-serif; -webkit-tap-highlight-color: transparent; }
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;700&display=swap');
+        body { background-color: #ffffff; font-family: 'IBM Plex Sans Arabic', sans-serif; }
         .page { display: none; padding-bottom: 100px; }
         .page-active { display: block; }
-        .tab-btn { padding-bottom: 8px; color: #666; font-size: 14px; border-bottom: 3px solid transparent; font-weight: 600; outline: none; }
-        .tab-btn.active { border-bottom: 3px solid #000; color: #000; font-weight: 900; }
-        .nav-item { color: #666; cursor: pointer; text-align: center; font-size: 10px; transition: all 0.2s; }
-        .nav-item.active { color: #000; font-weight: bold; }
         .price-font { font-family: 'Inter', sans-serif; font-weight: 800; }
-        .pay-tag { font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: bold; background: #f3f4f6; color: #374151; }
+        .pay-tag { font-size: 10px; padding: 2px 8px; border-radius: 4px; background: #f3f4f6; color: #1f2937; border-right: 3px solid #fbbf24; }
+        .order-card { border: 1px solid #f3f4f6; border-radius: 16px; padding: 16px; margin-bottom: 12px; }
+        #chatBox { position: fixed; inset: 0; background: white; z-index: 100; display: none; flex-direction: column; }
     </style>
 </head>
 <body>
 
-<nav class="flex justify-between items-center p-4 border-b border-gray-50 sticky top-0 bg-white z-50">
-    <div class="flex items-center gap-3">
-        <span class="text-2xl font-black uppercase tracking-tighter">OKX</span>
-        <div id="walletStatus" onclick="connectWallet()" 
-             class="text-[10px] bg-red-50 text-red-600 px-3 py-1.5 rounded-full font-bold cursor-pointer border border-red-100 whitespace-nowrap">
-            ربط المحفظة
-        </div>
+<nav class="flex justify-between items-center p-4 border-b bg-white sticky top-0 z-50">
+    <div class="flex items-center gap-2">
+        <span class="text-2xl font-black uppercase">OKX</span>
+        <div id="walletStatus" onclick="connectWallet()" class="text-[10px] bg-red-50 text-red-600 px-3 py-1 rounded-full font-bold cursor-pointer">ربط المحفظة</div>
     </div>
     <div class="flex gap-4">
         <i class="fa-solid fa-plus text-lg" onclick="showPage('create')"></i>
-        <i class="fa-solid fa-bars-staggered text-lg"></i>
     </div>
 </nav>
 
 <div id="p2pPage" class="page page-active">
-    <div class="flex gap-8 px-4 border-b border-gray-50 bg-white sticky top-[65px] z-40">
-        <button class="tab-btn active" onclick="setMarket('buy', this)">شراء</button>
-        <button class="tab-btn" onclick="setMarket('sell', this)">بيع</button>
+    <div class="flex gap-8 px-4 border-b bg-white sticky top-[65px] z-40">
+        <button class="tab-btn active border-b-2 border-black py-2" onclick="setMarket('buy', this)">شراء</button>
+        <button class="tab-btn py-2 text-gray-400" onclick="setMarket('sell', this)">بيع</button>
     </div>
-    <div id="marketList" class="px-4 mt-6 space-y-8"></div>
-</div>
-
-<div id="adsPage" class="page px-4">
-    <h2 class="text-xl font-bold mt-4">إعلاناتي</h2>
-    <div class="flex gap-6 border-b border-gray-100 mt-4">
-        <button onclick="renderMyAds('active', this)" class="tab-btn active" id="activeAdsCount">نشط (0)</button>
-        <button onclick="renderMyAds('inactive', this)" class="tab-btn" id="inactiveAdsCount">غير نشط (0)</button>
-    </div>
-    <div id="myAdsList" class="mt-6 space-y-4"></div>
+    <div id="marketList" class="px-4 mt-4 space-y-6"></div>
 </div>
 
 <div id="ordersPage" class="page px-4">
-    <h2 class="text-xl font-bold mt-4">طلباتي</h2>
-    <div class="flex gap-6 border-b border-gray-100 mt-4 text-sm overflow-x-auto">
-        <button class="tab-btn active" onclick="switchOrderTab('pending', this)">قيد التنفيذ</button>
-        <button class="tab-btn" onclick="switchOrderTab('completed', this)">مكتملة</button>
-        <button class="tab-btn" onclick="switchOrderTab('cancelled', this)">ملغي</button>
+    <div class="flex gap-4 border-b mt-4 overflow-x-auto">
+        <button onclick="renderOrders('pending', this)" class="tab-btn active text-sm pb-2 border-b-2 border-black">قيد التنفيذ</button>
+        <button onclick="renderOrders('completed', this)" class="tab-btn text-sm pb-2 text-gray-400">مكتملة</button>
+        <button onclick="renderOrders('cancelled', this)" class="tab-btn text-sm pb-2 text-gray-400">ملغي</button>
     </div>
-    <div id="ordersList" class="mt-6 space-y-4"></div>
+    <div id="ordersList" class="mt-4 space-y-4"></div>
 </div>
 
 <div id="createPage" class="page px-4">
-    <div class="flex items-center gap-4 mt-6 mb-8">
-        <i class="fa-solid fa-xmark text-xl" onclick="showPage('p2p')"></i>
-        <h2 class="text-lg font-bold">نشر إعلان</h2>
+    <div class="flex items-center gap-4 py-4 border-b mb-4">
+        <i class="fa-solid fa-arrow-right" onclick="showPage('p2p')"></i>
+        <span class="font-bold">إنشاء إعلان جديد</span>
     </div>
-    <div class="space-y-5">
-        <div class="bg-gray-100 p-1 rounded-2xl flex">
-            <button id="formBuy" onclick="setFormType('buy')" class="flex-1 py-3 rounded-xl font-bold bg-white text-green-600 shadow">شراء</button>
-            <button id="formSell" onclick="setFormType('sell')" class="flex-1 py-3 rounded-xl font-bold text-gray-400">بيع</button>
+    <div class="space-y-4">
+        <div class="bg-gray-100 p-1 rounded-xl flex">
+            <button id="formBuy" onclick="setFormType('buy')" class="flex-1 py-2 rounded-lg font-bold bg-white text-green-600 shadow-sm">بيع USDT (أخضر)</button>
+            <button id="formSell" onclick="setFormType('sell')" class="flex-1 py-2 rounded-lg font-bold text-gray-400">شراء USDT (أحمر)</button>
         </div>
-        <input id="inPrice" type="number" placeholder="السعر (EGP)" class="w-full p-4 bg-gray-50 rounded-xl outline-none font-bold text-xl price-font">
-        <input id="inAmount" type="number" placeholder="الكمية (USDT)" class="w-full p-4 bg-gray-50 rounded-xl outline-none font-bold text-xl price-font">
-        <div class="grid grid-cols-2 gap-3">
-            <input id="inMin" type="number" placeholder="الحد الأدنى" class="p-4 bg-gray-50 rounded-xl outline-none font-bold text-sm">
-            <input id="inMax" type="number" placeholder="الحد الأقصى" class="p-4 bg-gray-50 rounded-xl outline-none font-bold text-sm">
+        <input id="inPrice" type="number" placeholder="السعر (EGP)" class="w-full p-4 bg-gray-50 rounded-xl outline-none price-font text-lg">
+        <input id="inAmount" type="number" placeholder="الكمية الكلية (USDT)" class="w-full p-4 bg-gray-50 rounded-xl outline-none price-font">
+        <div class="flex gap-2">
+            <input id="inMin" type="number" placeholder="الحد الأدنى" class="flex-1 p-4 bg-gray-50 rounded-xl outline-none">
+            <input id="inMax" type="number" placeholder="الحد الأقصى" class="flex-1 p-4 bg-gray-50 rounded-xl outline-none">
         </div>
-        <select id="inPayment" class="w-full p-4 bg-gray-50 rounded-xl font-bold outline-none text-sm">
+        <select id="inPayment" class="w-full p-4 bg-gray-50 rounded-xl font-bold outline-none">
             <option value="Instapay">Instapay</option>
-            <option value="Vodafone">Vodafone Cash</option>
-            <option value="Bank">Bank Transfer</option>
+            <option value="Vodafone Cash">Vodafone Cash</option>
+            <option value="Bank Transfer">Bank Transfer</option>
         </select>
-        <button id="submitBtn" onclick="validateAndSubmit()" class="w-full py-4 rounded-full font-bold text-md bg-black text-white shadow-lg">تأكيد النشر</button>
+        <button onclick="validateAndSubmit()" class="w-full py-4 rounded-full font-bold bg-black text-white shadow-lg">تأكيد ونشر</button>
     </div>
 </div>
 
-<div class="fixed bottom-0 w-full bg-white border-t border-gray-100 flex justify-around py-3 z-50">
-    <div onclick="showPage('p2p')" id="nav-p2p" class="nav-item active">
-        <i class="fa-solid fa-house-chimney text-xl mb-1"></i><br>P2P
+<div id="chatBox">
+    <div class="p-4 border-b flex justify-between items-center bg-white shadow-sm">
+        <span id="chatOrderTitle" class="font-bold">دردشة الطلب</span>
+        <i class="fa-solid fa-xmark text-xl" onclick="closeChat()"></i>
     </div>
-    <div onclick="showPage('orders')" id="nav-orders" class="nav-item">
-        <i class="fa-solid fa-receipt text-xl mb-1"></i><br>الطلبات
-    </div>
-    <div onclick="showPage('ads')" id="nav-ads" class="nav-item">
-        <i class="fa-solid fa-bullhorn text-xl mb-1"></i><br>إعلاناتي
+    <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50"></div>
+    <div class="p-4 border-t bg-white flex gap-2">
+        <input id="chatInput" type="text" placeholder="اكتب رسالة..." class="flex-1 p-3 bg-gray-100 rounded-xl outline-none">
+        <button onclick="sendChatMessage()" class="bg-black text-white px-6 rounded-xl font-bold">إرسال</button>
     </div>
 </div>
+
+<div class="fixed bottom-0 w-full bg-white border-t border-gray-100 flex justify-around py-4 z-50">
+    <div onclick="showPage('p2p')" id="nav-p2p" class="text-center active"><i class="fa-solid fa-house"></i><div class="text-[10px]">P2P</div></div>
+    <div onclick="showPage('orders')" id="nav-orders" class="text-center"><i class="fa-solid fa-receipt"></i><div class="text-[10px]">الطلبات</div></div>
+    <div onclick="showPage('ads')" id="nav-ads" class="text-center"><i class="fa-solid fa-bullhorn"></i><div class="text-[10px]">إعلاناتي</div></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
 <script type="module" src="src/js/main.js"></script>
 </body>
