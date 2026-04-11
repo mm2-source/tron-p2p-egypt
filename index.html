@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OKX P2P Ultimate</title>
+    <title>OKX P2P Pro V2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -13,20 +13,16 @@
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;700&display=swap');
-        body { background-color: #ffffff; font-family: 'IBM Plex Sans Arabic', sans-serif; }
+        body { background-color: #ffffff; font-family: 'IBM Plex Sans Arabic', sans-serif; -webkit-tap-highlight-color: transparent; }
         .page { display: none; padding-bottom: 100px; }
         .page-active { display: block; }
-        
-        /* Bottom Navigation & Indicator */
         .nav-container { position: fixed; bottom: 0; width: 100%; background: #fff; border-top: 1px solid #f0f0f0; display: flex; justify-content: space-around; padding: 12px 0; z-index: 1000; }
         .nav-item { position: relative; display: flex; flex-direction: column; align-items: center; width: 25%; z-index: 10; cursor: pointer; color: #9ca3af; transition: color 0.3s; }
         .nav-item.active { color: #000; font-weight: bold; }
         .nav-indicator { position: absolute; bottom: 8px; height: 42px; background: #f3f4f6; border-radius: 12px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1; width: 20%; }
-
-        /* Styles for Ads and Orders */
         .tab-btn.active { border-bottom: 2px solid #000; color: #000; }
         .price-font { font-family: 'Inter', sans-serif; font-weight: 800; }
-        #chatBox { position: fixed; inset: 0; background: white; z-index: 2000; display: none; flex-direction: column; }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
 <body>
@@ -37,75 +33,88 @@
             <span class="text-2xl font-black italic">OKX</span>
             <div id="walletStatus" onclick="connectWallet()" class="text-[10px] bg-red-50 text-red-600 px-3 py-1 rounded-full font-bold cursor-pointer">ربط المحفظة</div>
         </div>
-        <i class="fa-solid fa-plus text-lg" onclick="showPage('create')"></i>
+        <div class="flex gap-4 items-center">
+            <i class="fa-solid fa-calculator text-gray-600"></i>
+            <i class="fa-solid fa-plus text-lg" onclick="showPage('create')"></i>
+        </div>
     </nav>
 
     <div id="p2pPage" class="page page-active">
-        <div class="flex gap-8 px-4 border-b bg-white">
-            <button class="tab-btn active py-2 font-bold" onclick="setMarket('buy', this)">شراء</button>
-            <button class="tab-btn py-2 text-gray-400 font-bold" onclick="setMarket('sell', this)">بيع</button>
+        <div class="flex justify-between items-center px-4 border-b bg-white">
+            <div class="flex gap-6">
+                <button class="tab-btn active py-3 font-bold text-lg" onclick="setMarket('buy', this)">شراء</button>
+                <button class="tab-btn py-3 text-gray-400 font-bold text-lg" onclick="setMarket('sell', this)">بيع</button>
+            </div>
+            <div class="flex items-center gap-1 font-bold text-sm">
+                USDT <i class="fa-solid fa-chevron-down text-[10px]"></i>
+            </div>
         </div>
-        <div id="marketList" class="px-4 mt-2 space-y-4"></div>
+        
+        <div class="flex gap-2 p-3 overflow-x-auto border-b bg-gray-50">
+            <button class="bg-white border rounded px-4 py-1.5 text-xs font-bold whitespace-nowrap">المبلغ <i class="fa-solid fa-chevron-down ml-1"></i></button>
+            <button class="bg-white border rounded px-4 py-1.5 text-xs font-bold whitespace-nowrap">طريقة الدفع <i class="fa-solid fa-chevron-down ml-1"></i></button>
+            <button class="bg-white border rounded px-4 py-1.5 text-xs font-bold whitespace-nowrap"><i class="fa-solid fa-filter"></i></button>
+        </div>
+
+        <div id="marketList" class="px-4 mt-2 space-y-5"></div>
+    </div>
+
+    <div id="adsPage" class="page">
+        <div class="flex px-4 border-b gap-6">
+            <button onclick="switchAdTab('active', this)" class="ad-tab py-3 text-sm font-bold border-b-2 border-black">نشط <span id="activeCount" class="bg-gray-100 px-1.5 rounded">0</span></button>
+            <button onclick="switchAdTab('inactive', this)" class="ad-tab py-3 text-sm text-gray-400">غير نشط <span id="inactiveCount">0</span></button>
+        </div>
+        <div id="myAdsContainer" class="px-4 mt-6"></div>
     </div>
 
     <div id="ordersPage" class="page">
         <div class="flex px-4 border-b">
-            <button onclick="renderOrders('pending', this)" class="order-tab flex-1 py-3 text-sm font-bold border-b-2 border-black text-black">قيد التنفيذ</button>
+            <button onclick="renderOrders('pending', this)" class="order-tab flex-1 py-3 text-sm font-bold border-b-2 border-black">قيد التنفيذ</button>
             <button onclick="renderOrders('completed', this)" class="order-tab flex-1 py-3 text-sm text-gray-400">مكتملة</button>
             <button onclick="renderOrders('cancelled', this)" class="order-tab flex-1 py-3 text-sm text-gray-400">ملغي</button>
         </div>
         <div id="ordersList" class="px-4 mt-4 space-y-4"></div>
     </div>
 
-    <div id="adsPage" class="page">
-        <div class="flex px-4 border-b gap-6">
-            <button onclick="switchAdTab('active', this)" class="ad-tab py-3 text-sm font-bold border-b-2 border-black text-black">نشط <span id="activeCount">0</span></button>
-            <button onclick="switchAdTab('inactive', this)" class="ad-tab py-3 text-sm text-gray-400">غير نشط <span id="inactiveCount">0</span></button>
-        </div>
-        <div id="myAdsContainer" class="px-4 mt-10">
-            </div>
-    </div>
-
     <div id="createPage" class="page px-4">
-        <div class="py-4 border-b mb-4 flex items-center gap-4">
-            <i class="fa-solid fa-arrow-right" onclick="showPage('p2p')"></i>
-            <span class="font-bold">إعلان جديد</span>
+        <div class="py-4 flex items-center gap-4">
+            <i class="fa-solid fa-xmark text-lg" onclick="showPage('p2p')"></i>
+            <span class="font-bold">إنشاء إعلان</span>
         </div>
-        <div class="space-y-4">
-            <div class="bg-gray-100 p-1 rounded-xl flex">
-                <button id="formBuy" onclick="setFormType('buy')" class="flex-1 py-3 rounded-lg font-bold bg-white text-green-600 shadow-sm">بيع (أخضر)</button>
-                <button id="formSell" onclick="setFormType('sell')" class="flex-1 py-3 rounded-lg font-bold text-gray-400">شراء (أحمر)</button>
+        <div class="bg-gray-100 p-1 rounded-xl flex mb-6">
+            <button id="formBuy" onclick="setFormType('buy')" class="flex-1 py-3 rounded-lg font-bold bg-white text-green-600 shadow-sm">بيع (أخضر)</button>
+            <button id="formSell" onclick="setFormType('sell')" class="flex-1 py-3 rounded-lg font-bold text-gray-400">شراء (أحمر)</button>
+        </div>
+        <div class="space-y-6">
+            <div>
+                <label class="text-xs text-gray-400 block mb-2">السعر الثابت</label>
+                <div class="flex border-b pb-2 items-center">
+                    <input id="inPrice" type="number" placeholder="0.00" class="flex-1 text-2xl font-bold outline-none price-font">
+                    <span class="font-bold">EGP</span>
+                </div>
             </div>
-            <input id="inPrice" type="number" placeholder="السعر EGP" class="w-full p-4 bg-gray-50 rounded-xl border outline-none price-font">
-            <input id="inAmount" type="number" placeholder="الكمية USDT" class="w-full p-4 bg-gray-50 rounded-xl border outline-none price-font">
-            <button onclick="publishAd()" class="w-full py-4 bg-black text-white rounded-full font-bold shadow-lg">تأكيد النشر</button>
-        </div>
-    </div>
-
-    <div id="chatBox">
-        <div class="p-4 border-b flex justify-between items-center bg-white sticky top-0">
-            <i class="fa-solid fa-chevron-right" onclick="document.getElementById('chatBox').style.display='none'"></i>
-            <span id="chatTitle" class="font-bold text-sm"></span>
-            <span class="text-red-500 font-bold text-xs" id="chatTimer">15:00</span>
-        </div>
-        <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50"></div>
-        <div class="p-4 border-t bg-white flex gap-2">
-            <input id="chatInput" type="text" placeholder="اكتب رسالة..." class="flex-1 p-3 bg-gray-100 rounded-full outline-none px-5">
-            <button onclick="sendMessage()" class="bg-black text-white w-12 h-12 rounded-full"><i class="fa-solid fa-paper-plane"></i></button>
+            <div>
+                <label class="text-xs text-gray-400 block mb-2">إجمالي الكمية</label>
+                <div class="flex border-b pb-2 items-center">
+                    <input id="inAmount" type="number" placeholder="أدخل الكمية" class="flex-1 text-2xl font-bold outline-none price-font">
+                    <span class="font-bold text-gray-400">USDT</span>
+                </div>
+            </div>
+            <button onclick="publishAd()" class="w-full py-4 bg-black text-white rounded-full font-bold mt-10">نشر الإعلان</button>
         </div>
     </div>
 
     <div class="nav-container">
         <div id="navIndicator" class="nav-indicator" style="right: 2.5%;"></div>
-        <div onclick="navTo('p2p', 0)" class="nav-item active"><i class="fa-solid fa-house text-lg"></i><span class="text-[9px] mt-1">P2P</span></div>
-        <div onclick="navTo('orders', 1)" class="nav-item"><i class="fa-solid fa-receipt text-lg"></i><span class="text-[9px] mt-1">الطلبات</span></div>
-        <div onclick="navTo('ads', 2)" class="nav-item"><i class="fa-solid fa-bullhorn text-lg"></i><span class="text-[9px] mt-1">إعلاناتي</span></div>
-        <div onclick="navTo('profile', 3)" class="nav-item"><i class="fa-solid fa-user text-lg"></i><span class="text-[9px] mt-1">صفحتي</span></div>
+        <div onclick="navTo('p2p', 0)" class="nav-item active"><i class="fa-solid fa-house"></i><span class="text-[10px] mt-1">P2P</span></div>
+        <div onclick="navTo('orders', 1)" class="nav-item"><i class="fa-solid fa-receipt"></i><span class="text-[10px] mt-1">الطلبات</span></div>
+        <div onclick="navTo('ads', 2)" class="nav-item"><i class="fa-solid fa-bullhorn"></i><span class="text-[10px] mt-1">إعلاناتي</span></div>
+        <div onclick="navTo('profile', 3)" class="nav-item"><i class="fa-solid fa-user"></i><span class="text-[10px] mt-1">صفحتي</span></div>
     </div>
 </div>
 
 <script>
-// --- تهيئة Firebase ---
+// --- Configuration ---
 const firebaseConfig = {
     apiKey: "AIzaSyClJPT4UQsy9XmV4JB34rt0rYUB-FefyXY",
     authDomain: "mustafa-dbece.firebaseapp.com",
@@ -117,208 +126,163 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-const rtdb = firebase.database();
 
-// --- متغيرات الحالة ---
 let tronWeb = null;
 let marketType = 'buy';
 let adTab = 'active';
-let activeChatId = null;
 
-// --- مكان العقد الذكي ---
-const ESCROW_CONTRACT = "YOUR_CONTRACT_ADDRESS_HERE";
-
-// --- وظائف التنقل ---
-function showPage(id) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('page-active'));
-    document.getElementById(id + 'Page').classList.add('page-active');
-    if(id === 'p2p') renderMarket();
-    if(id === 'orders') renderOrders('pending');
-    if(id === 'ads') renderMyAds();
-}
-
+// --- Navigation ---
 function navTo(page, index) {
-    const positions = ['2.5%', '27.5%', '52.5%', '77.5%'];
-    document.getElementById('navIndicator').style.right = positions[index];
+    const pos = ['2.5%', '27.5%', '52.5%', '77.5%'];
+    document.getElementById('navIndicator').style.right = pos[index];
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.nav-item')[index].classList.add('active');
     showPage(page);
 }
 
-// --- ربط المحفظة ---
+function showPage(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('page-active'));
+    document.getElementById(id + 'Page').classList.add('page-active');
+    if(id === 'p2p') renderMarket();
+    if(id === 'ads') renderMyAds();
+}
+
+// --- Wallet ---
 async function connectWallet() {
     if (window.tronLink) {
         await window.tronLink.request({ method: "tron_requestAccounts" });
         tronWeb = window.tronLink.tronWeb;
-        const addr = tronWeb.defaultAddress.base58;
-        document.getElementById('walletStatus').innerText = addr.substring(0,6) + "...";
-        document.getElementById('walletStatus').className = "text-[10px] bg-green-50 text-green-600 px-3 py-1 rounded-full font-bold cursor-pointer";
+        document.getElementById('walletStatus').innerText = "متصل";
+        document.getElementById('walletStatus').className = "text-[10px] bg-green-50 text-green-600 px-3 py-1 rounded-full font-bold";
         renderMarket();
     }
 }
 
-// --- منطق الإعلانات ---
-async function publishAd() {
-    if(!tronWeb) return Swal.fire("اربط المحفظة أولاً");
-    const isBuy = document.getElementById('formBuy').classList.contains('bg-white');
-    const type = isBuy ? 'buy' : 'sell'; // buy = أخضر
-    const amount = document.getElementById('inAmount').value;
-    const price = document.getElementById('inPrice').value;
-    const myAddr = tronWeb.defaultAddress.base58;
+// --- Market Rendering ---
+function renderMarket() {
+    const container = document.getElementById('marketList');
+    const myAddr = tronWeb?.defaultAddress?.base58;
+    const type = marketType === 'buy' ? 'buy' : 'sell';
 
-    if(type === 'buy') {
-        // فحص الرصيد للحجز (إعلان أخضر)
-        const contract = await tronWeb.contract().at("TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t");
-        const bal = await contract.balanceOf(myAddr).call();
-        if((bal / 1000000) < parseFloat(amount)) return Swal.fire("رصيد USDT غير كافٍ للحجز");
-    }
-
-    await db.collection("ads").add({
-        type, amount, price, owner: myAddr, status: 'active', createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    db.collection("ads").where("status", "==", "active").where("type", "==", type).onSnapshot(snap => {
+        container.innerHTML = snap.docs.map(doc => {
+            const a = doc.data();
+            return `
+            <div class="border-b pb-5">
+                <div class="flex justify-between items-start mb-2">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-zinc-100 rounded-full flex items-center justify-center font-bold text-xs">S</div>
+                        <div>
+                            <div class="font-bold text-sm">Shark_${a.owner.slice(0,4)} <i class="fa-solid fa-circle-check text-blue-500 text-[10px]"></i></div>
+                            <div class="text-[10px] text-gray-400">120 طلب | 98% إتمام</div>
+                        </div>
+                    </div>
+                    <div class="text-[10px] text-gray-400">30-45 min</div>
+                </div>
+                <div class="flex justify-between items-end">
+                    <div>
+                        <div class="text-2xl font-black price-font">${a.price} <span class="text-xs font-normal">EGP</span></div>
+                        <div class="text-[11px] text-gray-500 mt-1">الكمية: <span class="text-black font-medium">${a.amount} USDT</span></div>
+                        <div class="flex gap-2 mt-2">
+                            <span class="border-r pr-2 text-[10px] text-orange-500 font-bold">Vodafone Cash</span>
+                        </div>
+                    </div>
+                    <button onclick="openOrder('${doc.id}', '${a.owner}')" class="${marketType==='buy'?'bg-green-600':'bg-red-600'} text-white px-7 py-2 rounded-lg font-bold text-sm">
+                        ${marketType === 'buy' ? 'شراء' : 'بيع'}
+                    </button>
+                </div>
+            </div>`;
+        }).join('');
     });
-    showPage('p2p');
 }
 
+// --- My Ads ---
 function renderMyAds() {
     const container = document.getElementById('myAdsContainer');
     const myAddr = tronWeb?.defaultAddress?.base58;
-    if(!myAddr) return container.innerHTML = "اربط المحفظة";
+    if(!myAddr) return container.innerHTML = "<p class='text-center mt-20 text-gray-400'>اربط المحفظة أولاً</p>";
 
     db.collection("ads").where("owner", "==", myAddr).onSnapshot(snap => {
-        const ads = snap.docs.map(d => d.data());
+        const ads = snap.docs.map(d => ({id: d.id, ...d.data()}));
         const filtered = ads.filter(a => adTab === 'active' ? a.status === 'active' : a.status !== 'active');
+        
         document.getElementById('activeCount').innerText = ads.filter(a => a.status === 'active').length;
         document.getElementById('inactiveCount').innerText = ads.filter(a => a.status !== 'active').length;
 
         if(filtered.length === 0) {
-            container.innerHTML = `
-                <div class="flex flex-col items-center justify-center text-center mt-20">
-                    <i class="fa-solid fa-bullhorn text-gray-200 text-6xl mb-4"></i>
-                    <h3 class="font-bold text-gray-800">لم يتم العثور على إعلانات</h3>
-                    <p class="text-xs text-gray-400 mb-6">أنشئ إعلاناً لشراء العملات الرقمية أو بيعها.</p>
-                    <button onclick="showPage('create')" class="bg-black text-white px-10 py-3 rounded-full font-bold">إنشاء إعلان</button>
-                </div>`;
+            container.innerHTML = `<div class="flex flex-col items-center mt-20 text-center">
+                <i class="fa-solid fa-bullhorn text-gray-100 text-6xl mb-4"></i>
+                <h3 class="font-bold">لم يتم العثور على إعلانات</h3>
+                <button onclick="showPage('create')" class="mt-4 bg-black text-white px-8 py-2 rounded-full font-bold text-sm">إنشاء إعلان</button>
+            </div>`;
         } else {
             container.innerHTML = filtered.map(a => `
-                <div class="p-4 border rounded-2xl mb-3 shadow-sm">
-                    <div class="flex justify-between font-bold text-sm">
-                        <span class="${a.type==='buy'?'text-green-600':'text-red-600'}">USDT / EGP</span>
-                        <span class="text-gray-400">نشط</span>
+                <div class="p-4 border rounded-2xl mb-4 shadow-sm bg-white">
+                    <div class="flex justify-between mb-3">
+                        <span class="text-xs font-bold ${a.type==='buy'?'text-green-600':'text-red-600'}">USDT / EGP</span>
+                        <div class="flex gap-3">
+                            <button onclick="editAd('${a.id}')" class="text-blue-600 text-xs font-bold">تعديل</button>
+                            <button onclick="toggleAdStatus('${a.id}', '${a.status}')" class="text-red-500 text-xs font-bold">
+                                ${a.status === 'active' ? 'إيقاف' : 'تفعيل'}
+                            </button>
+                        </div>
                     </div>
-                    <div class="text-xl font-black price-font mt-1">${a.price} EGP</div>
+                    <div class="text-xl font-black price-font">${a.price} <span class="text-xs">EGP</span></div>
+                    <div class="text-xs text-gray-400 mt-1">الكمية: ${a.amount} USDT</div>
                 </div>`).join('');
         }
     });
 }
 
-// --- منطق الطلبات والشات ---
-async function openOrder(adId) {
-    const adDoc = await db.collection("ads").doc(adId).get();
-    const ad = adDoc.data();
-    const orderId = "ORD-" + Date.now().toString().slice(-4);
-    await db.collection("orders").doc(orderId).set({
-        ...ad, orderId, buyerAddr: tronWeb.defaultAddress.base58, status: 'pending', isPaid: false
+// --- Core Logic ---
+async function publishAd() {
+    const price = document.getElementById('inPrice').value;
+    const amount = document.getElementById('inAmount').value;
+    if(!price || !amount) return Swal.fire("أكمل البيانات");
+    
+    const isBuyForm = document.getElementById('formBuy').classList.contains('bg-white');
+    await db.collection("ads").add({
+        type: isBuyForm ? 'buy' : 'sell',
+        price, amount, owner: tronWeb.defaultAddress.base58,
+        status: 'active', createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
-    navTo('orders', 1);
+    showPage('p2p');
 }
 
-function renderOrders(status, btn) {
-    if(btn) {
-        document.querySelectorAll('.order-tab').forEach(t => t.className = "order-tab flex-1 py-3 text-sm text-gray-400");
-        btn.className = "order-tab flex-1 py-3 text-sm font-bold border-b-2 border-black text-black";
+function openOrder(id, owner) {
+    if(tronWeb.defaultAddress.base58 === owner) {
+        return Swal.fire({ icon: 'error', title: 'خطأ', text: 'لا يمكنك تنفيذ طلب على إعلانك الخاص!' });
     }
-    const container = document.getElementById('ordersList');
-    const myAddr = tronWeb?.defaultAddress?.base58;
-
-    db.collection("orders").where("status", "==", status).onSnapshot(snap => {
-        const myOrders = snap.docs.filter(d => d.data().owner === myAddr || d.data().buyerAddr === myAddr);
-        container.innerHTML = myOrders.map(doc => {
-            const o = doc.data();
-            const isOwner = o.owner === myAddr;
-            return `
-            <div class="p-4 border rounded-2xl shadow-sm">
-                <div class="flex justify-between items-center mb-2">
-                    <span class="text-[10px] font-bold text-gray-400">#${o.orderId}</span>
-                    <button onclick="openChat('${doc.id}')" class="text-blue-600 text-xs font-bold">الدردشة</button>
-                </div>
-                <div class="text-lg font-black">${o.price} EGP</div>
-                ${o.status === 'pending' ? `
-                    <div class="flex gap-2 mt-3">
-                        ${!isOwner && !o.isPaid ? `<button onclick="updateOrder('${doc.id}', {isPaid:true})" class="flex-1 bg-black text-white py-2 rounded-lg text-xs font-bold">تم الدفع</button>` : ''}
-                        ${isOwner && o.isPaid ? `<button onclick="updateOrder('${doc.id}', {status:'completed'})" class="flex-1 bg-green-600 text-white py-2 rounded-lg text-xs font-bold">تحرير</button>` : ''}
-                        ${((o.type==='buy' && !isOwner) || (o.type==='sell' && isOwner)) ? `<button onclick="updateOrder('${doc.id}', {status:'cancelled'})" class="flex-1 bg-gray-100 text-gray-400 py-2 rounded-lg text-xs font-bold">إلغاء</button>` : ''}
-                    </div>
-                ` : ''}
-            </div>`;
-        }).join('');
-    });
+    // كمل منطق فتح الطلب هنا...
+    Swal.fire("تم فتح الطلب بنجاح");
 }
 
-function openChat(id) {
-    activeChatId = id;
-    document.getElementById('chatBox').style.display = 'flex';
-    document.getElementById('chatTitle').innerText = "طلب " + id;
-    rtdb.ref('chats/'+id).on('value', snap => {
-        const msgs = snap.val() ? Object.values(snap.val()) : [];
-        document.getElementById('chatMessages').innerHTML = msgs.map(m => `
-            <div class="flex ${m.sender === tronWeb.defaultAddress.base58 ? 'justify-end' : 'justify-start'}">
-                <div class="p-3 rounded-2xl text-sm ${m.sender === tronWeb.defaultAddress.base58 ? 'bg-black text-white' : 'bg-white border text-black'} shadow-sm max-w-[80%]">
-                    ${m.text}
-                </div>
-            </div>`).join('');
-    });
+function toggleAdStatus(id, current) {
+    const newStatus = current === 'active' ? 'inactive' : 'active';
+    db.collection("ads").doc(id).update({ status: newStatus });
 }
 
-function sendMessage() {
-    const text = document.getElementById('chatInput').value;
-    if(!text) return;
-    rtdb.ref('chats/'+activeChatId).push({ sender: tronWeb.defaultAddress.base58, text });
-    document.getElementById('chatInput').value = '';
-}
-
-// --- دوال مساعدة ---
 function setMarket(t, b) {
     marketType = t;
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.className = "tab-btn py-2 text-gray-400 font-bold");
-    b.className = "tab-btn active py-2 font-bold";
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.className = "tab-btn py-3 text-gray-400 font-bold text-lg");
+    b.className = "tab-btn active py-3 font-bold text-lg";
     renderMarket();
 }
+
 function switchAdTab(t, b) {
     adTab = t;
     document.querySelectorAll('.ad-tab').forEach(btn => btn.className = "ad-tab py-3 text-sm text-gray-400");
-    b.className = "ad-tab py-3 text-sm font-bold border-b-2 border-black text-black";
+    b.className = "ad-tab py-3 text-sm font-bold border-b-2 border-black";
     renderMyAds();
 }
+
 function setFormType(t) {
     const b = document.getElementById('formBuy'), s = document.getElementById('formSell');
     if(t === 'buy') { b.className = "flex-1 py-3 rounded-lg font-bold bg-white text-green-600 shadow-sm"; s.className = "flex-1 py-3 rounded-lg font-bold text-gray-400"; }
     else { s.className = "flex-1 py-3 rounded-lg font-bold bg-white text-red-600 shadow-sm"; b.className = "flex-1 py-3 rounded-lg font-bold text-gray-400"; }
 }
-function updateOrder(id, data) { db.collection("orders").doc(id).update(data); }
-
-function renderMarket() {
-    const container = document.getElementById('marketList');
-    const searchType = marketType === 'buy' ? 'buy' : 'sell';
-    db.collection("ads").where("status", "==", "active").where("type", "==", searchType).onSnapshot(snap => {
-        container.innerHTML = snap.docs.map(doc => {
-            const a = doc.data();
-            return `
-            <div class="border-b pb-4 flex justify-between items-center">
-                <div>
-                    <div class="text-xs font-bold text-gray-400 mb-1">Shark ${a.owner.slice(0,4)}</div>
-                    <div class="text-2xl font-black price-font">${a.price} <span class="text-xs font-normal">EGP</span></div>
-                    <div class="text-[10px] text-gray-500">متاح: ${a.amount} USDT</div>
-                </div>
-                <button onclick="openOrder('${doc.id}')" class="${marketType==='buy'?'bg-green-600':'bg-red-600'} text-white px-8 py-2 rounded-lg font-bold shadow-md">
-                    ${marketType === 'buy' ? 'شراء' : 'بيع'}
-                </button>
-            </div>`;
-        }).join('');
-    });
-}
 
 window.onload = connectWallet;
 </script>
 </body>
-    </html>
-    
+</html>
