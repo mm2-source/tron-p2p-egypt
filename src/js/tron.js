@@ -1,3 +1,4 @@
+// src/js/tron.js
 export let tronWebInstance = null;
 export let currentUserAddress = null;
 
@@ -5,7 +6,7 @@ const USDT_ADDRESS = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";
 
 export async function connectWallet() {
     if (typeof window.tronLink === "undefined") {
-        Swal.fire("TronLink غير مثبت", "يرجى تثبيت TronLink أولاً", "warning");
+        Swal.fire("TronLink غير مثبت", "يرجى استخدام متصفح يدعم TronLink", "warning");
         return false;
     }
 
@@ -17,21 +18,14 @@ export async function connectWallet() {
         const balance = await getUSDTBalance(currentUserAddress);
 
         const walletEl = document.getElementById("walletStatus");
-        walletEl.innerHTML = `
-            \( {currentUserAddress.substring(0, 6)}... \){currentUserAddress.substring(currentUserAddress.length - 4)}
-            <span class="text-green-600">(${balance.toFixed(2)} USDT)</span>
-        `;
-        walletEl.className = "px-5 py-2.5 bg-green-50 text-green-700 text-sm font-bold rounded-3xl border border-green-200 cursor-pointer";
-
-        Swal.fire({
-            title: "تم الربط بنجاح",
-            html: `العنوان: <b>\( {currentUserAddress}</b><br>الرصيد: <b> \){balance.toFixed(2)} USDT</b>`,
-            icon: "success"
-        });
+        // اختصار العنوان: T...XXXX
+        const shortAddr = `${currentUserAddress.substring(0, 4)}...${currentUserAddress.slice(-4)}`;
+        
+        walletEl.innerHTML = `${shortAddr} | <span class="text-green-600">${balance.toFixed(2)} USDT</span>`;
+        walletEl.className = "text-[10px] bg-green-50 text-green-700 px-3 py-1.5 rounded-full font-bold border border-green-200 cursor-pointer";
 
         return true;
     } catch (err) {
-        Swal.fire("فشل الربط", err.message || "حدث خطأ", "error");
         return false;
     }
 }
@@ -43,7 +37,7 @@ export async function getUSDTBalance(address) {
         const balanceHex = await contract.balanceOf(address).call();
         return Number(balanceHex) / 1000000;
     } catch (error) {
-        console.error("خطأ في جلب الرصيد:", error);
+        console.error("Balance Error:", error);
         return 0;
     }
 }
