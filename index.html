@@ -9,37 +9,15 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=IBM+Plex+Sans+Arabic:wght@400;700&display=swap');
-        body { background-color: #ffffff; font-family: 'IBM Plex Sans Arabic', sans-serif; }
+        body { background-color: #ffffff; font-family: 'IBM Plex Sans Arabic', sans-serif; -webkit-tap-highlight-color: transparent; }
         .page { display: none; padding-bottom: 100px; }
         .page-active { display: block; }
-        
-        .tab-btn { 
-            padding-bottom: 8px; 
-            color: #666; 
-            font-size: 15px; 
-            border-bottom: 3px solid transparent; 
-            font-weight: 600;
-        }
-        .tab-btn.active { 
-            border-bottom: 3px solid #000; 
-            color: #000; 
-            font-weight: 900; 
-        }
-        
-        .nav-item { 
-            color: #666; 
-            cursor: pointer; 
-            text-align: center; 
-            font-size: 10px; 
-            transition: all 0.2s; 
-        }
-        .nav-item.active { 
-            color: #000; 
-            font-weight: bold; 
-        }
-        
+        .tab-btn { padding-bottom: 8px; color: #666; font-size: 14px; border-bottom: 3px solid transparent; font-weight: 600; outline: none; }
+        .tab-btn.active { border-bottom: 3px solid #000; color: #000; font-weight: 900; }
+        .nav-item { color: #666; cursor: pointer; text-align: center; font-size: 10px; transition: all 0.2s; }
+        .nav-item.active { color: #000; font-weight: bold; }
         .price-font { font-family: 'Inter', sans-serif; font-weight: 800; }
-        .submit-btn { transition: all 0.3s; font-size: 16px; }
+        .pay-tag { font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: bold; background: #f3f4f6; color: #374151; }
     </style>
 </head>
 <body>
@@ -48,7 +26,7 @@
     <div class="flex items-center gap-3">
         <span class="text-2xl font-black uppercase tracking-tighter">OKX</span>
         <div id="walletStatus" onclick="connectWallet()" 
-             class="text-xs bg-red-50 text-red-600 px-4 py-2 rounded-full font-bold cursor-pointer border border-red-200">
+             class="text-[10px] bg-red-50 text-red-600 px-3 py-1.5 rounded-full font-bold cursor-pointer border border-red-100 whitespace-nowrap">
             ربط المحفظة
         </div>
     </div>
@@ -58,7 +36,6 @@
     </div>
 </nav>
 
-<!-- P2P Market -->
 <div id="p2pPage" class="page page-active">
     <div class="flex gap-8 px-4 border-b border-gray-50 bg-white sticky top-[65px] z-40">
         <button class="tab-btn active" onclick="setMarket('buy', this)">شراء</button>
@@ -67,19 +44,17 @@
     <div id="marketList" class="px-4 mt-6 space-y-8"></div>
 </div>
 
-<!-- إعلاناتي -->
 <div id="adsPage" class="page px-4">
-    <h2 class="text-2xl font-bold mt-4">إعلاناتي</h2>
+    <h2 class="text-xl font-bold mt-4">إعلاناتي</h2>
     <div class="flex gap-6 border-b border-gray-100 mt-4">
         <button onclick="renderMyAds('active', this)" class="tab-btn active" id="activeAdsCount">نشط (0)</button>
         <button onclick="renderMyAds('inactive', this)" class="tab-btn" id="inactiveAdsCount">غير نشط (0)</button>
     </div>
-    <div id="myAdsList" class="mt-8"></div>
+    <div id="myAdsList" class="mt-6 space-y-4"></div>
 </div>
 
-<!-- طلباتي -->
 <div id="ordersPage" class="page px-4">
-    <h2 class="text-2xl font-bold mt-4">طلباتي</h2>
+    <h2 class="text-xl font-bold mt-4">طلباتي</h2>
     <div class="flex gap-6 border-b border-gray-100 mt-4 text-sm overflow-x-auto">
         <button class="tab-btn active" onclick="switchOrderTab('pending', this)">قيد التنفيذ</button>
         <button class="tab-btn" onclick="switchOrderTab('completed', this)">مكتملة</button>
@@ -88,54 +63,40 @@
     <div id="ordersList" class="mt-6 space-y-4"></div>
 </div>
 
-<!-- نشر إعلان -->
 <div id="createPage" class="page px-4">
     <div class="flex items-center gap-4 mt-6 mb-8">
-        <i class="fa-solid fa-xmark text-2xl" onclick="showPage('p2p')"></i>
-        <h2 class="text-xl font-bold">نشر إعلان</h2>
+        <i class="fa-solid fa-xmark text-xl" onclick="showPage('p2p')"></i>
+        <h2 class="text-lg font-bold">نشر إعلان</h2>
     </div>
-    <div class="space-y-6">
+    <div class="space-y-5">
         <div class="bg-gray-100 p-1 rounded-2xl flex">
-            <button id="formBuy" onclick="setFormType('buy')" 
-                    class="flex-1 py-4 rounded-2xl font-bold bg-white text-green-600 shadow">شراء</button>
-            <button id="formSell" onclick="setFormType('sell')" 
-                    class="flex-1 py-4 rounded-2xl font-bold text-gray-400">بيع</button>
+            <button id="formBuy" onclick="setFormType('buy')" class="flex-1 py-3 rounded-xl font-bold bg-white text-green-600 shadow">شراء</button>
+            <button id="formSell" onclick="setFormType('sell')" class="flex-1 py-3 rounded-xl font-bold text-gray-400">بيع</button>
         </div>
-
-        <input id="inPrice" type="number" placeholder="السعر (EGP)" class="w-full p-5 bg-gray-50 rounded-2xl outline-none font-bold text-2xl price-font">
-        <input id="inAmount" type="number" placeholder="الكمية (USDT)" class="w-full p-5 bg-gray-50 rounded-2xl outline-none font-bold text-2xl price-font">
-
-        <div class="grid grid-cols-2 gap-4">
-            <input id="inMin" type="number" placeholder="الحد الأدنى" class="p-5 bg-gray-50 rounded-2xl outline-none font-bold">
-            <input id="inMax" type="number" placeholder="الحد الأقصى" class="p-5 bg-gray-50 rounded-2xl outline-none font-bold">
+        <input id="inPrice" type="number" placeholder="السعر (EGP)" class="w-full p-4 bg-gray-50 rounded-xl outline-none font-bold text-xl price-font">
+        <input id="inAmount" type="number" placeholder="الكمية (USDT)" class="w-full p-4 bg-gray-50 rounded-xl outline-none font-bold text-xl price-font">
+        <div class="grid grid-cols-2 gap-3">
+            <input id="inMin" type="number" placeholder="الحد الأدنى" class="p-4 bg-gray-50 rounded-xl outline-none font-bold text-sm">
+            <input id="inMax" type="number" placeholder="الحد الأقصى" class="p-4 bg-gray-50 rounded-xl outline-none font-bold text-sm">
         </div>
-
-        <select id="inPayment" class="w-full p-5 bg-gray-50 rounded-2xl font-bold outline-none">
+        <select id="inPayment" class="w-full p-4 bg-gray-50 rounded-xl font-bold outline-none text-sm">
             <option value="Instapay">Instapay</option>
             <option value="Vodafone">Vodafone Cash</option>
             <option value="Bank">Bank Transfer</option>
         </select>
-
-        <button id="submitBtn" onclick="validateAndSubmit()" 
-                class="w-full py-5 rounded-3xl font-bold text-lg shadow-lg submit-btn">
-            تأكيد النشر
-        </button>
+        <button id="submitBtn" onclick="validateAndSubmit()" class="w-full py-4 rounded-full font-bold text-md bg-black text-white shadow-lg">تأكيد النشر</button>
     </div>
 </div>
 
-<!-- Bottom Navigation -->
-<div class="fixed bottom-0 w-full bg-white border-t border-gray-100 flex justify-around py-4 z-50">
-    <div onclick="showPage('p2p')" id="nav-p2p" class="nav-item active flex flex-col items-center">
-        <i class="fa-solid fa-house-chimney text-2xl mb-1"></i>
-        <span>P2P</span>
+<div class="fixed bottom-0 w-full bg-white border-t border-gray-100 flex justify-around py-3 z-50">
+    <div onclick="showPage('p2p')" id="nav-p2p" class="nav-item active">
+        <i class="fa-solid fa-house-chimney text-xl mb-1"></i><br>P2P
     </div>
-    <div onclick="showPage('orders')" id="nav-orders" class="nav-item flex flex-col items-center">
-        <i class="fa-solid fa-receipt text-2xl mb-1"></i>
-        <span>الطلبات</span>
+    <div onclick="showPage('orders')" id="nav-orders" class="nav-item">
+        <i class="fa-solid fa-receipt text-xl mb-1"></i><br>الطلبات
     </div>
-    <div onclick="showPage('ads')" id="nav-ads" class="nav-item flex flex-col items-center">
-        <i class="fa-solid fa-bullhorn text-2xl mb-1"></i>
-        <span>إعلاناتي</span>
+    <div onclick="showPage('ads')" id="nav-ads" class="nav-item">
+        <i class="fa-solid fa-bullhorn text-xl mb-1"></i><br>إعلاناتي
     </div>
 </div>
 
