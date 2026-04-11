@@ -1,4 +1,3 @@
-// src/js/main.js
 import { connectWallet } from './tron.js';
 import { showPage, setMarket, setFormType } from './ui.js';
 
@@ -14,24 +13,16 @@ async function createAd() {
         return;
     }
 
-    Swal.fire({
-        title: 'تم نشر الإعلان',
-        text: 'الإعلان تم إضافته بنجاح (مؤقتاً)',
-        icon: 'success'
-    });
-
+    Swal.fire('تم النشر', 'الإعلان تم نشره مؤقتاً', 'success');
     showPage('p2p');
 }
 
-// جعل الدوال متاحة في HTML
 window.connectWallet = connectWallet;
 window.showPage = showPage;
 window.setMarket = setMarket;
 window.setFormType = setFormType;
 window.createAd = createAd;
 
-// تشغيل عند تحميل الصفحة
 window.onload = () => {
     showPage('p2p');
-    console.log('%cTron P2P Egypt جاهز للعمل', 'color: #00b07c; font-weight: bold');
 };
