@@ -3,25 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OKX P2P Pro</title>
 
+    <title>P2P Platform</title>
+
+    <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- ✅ FIXED FONT AWESOME (مضمون) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- SweetAlert -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
     <style>
-        body { font-family: 'IBM Plex Sans Arabic', sans-serif; }
+        body { font-family: sans-serif; }
         .page { display:none; }
         .page-active { display:block; }
-        .nav-item.active { color:#000; }
+
+        .nav-item.active { color: black; }
     </style>
 </head>
 
 <body>
 
+<!-- NAV -->
 <nav class="flex justify-between p-4 border-b">
-    <div>OKX P2P</div>
+    <div class="font-bold">P2P</div>
     <div id="walletStatus" onclick="connectWallet()" class="text-xs bg-red-100 px-3 py-1 rounded">
         ربط المحفظة
     </div>
@@ -29,41 +41,46 @@
 
 <!-- P2P -->
 <div id="p2pPage" class="page page-active">
-    <div class="flex gap-4 p-3 border-b">
+    <div class="p-3 flex gap-4 border-b">
         <button onclick="setMarket('buy')" class="font-bold">شراء</button>
         <button onclick="setMarket('sell')" class="font-bold">بيع</button>
     </div>
+
     <div id="marketList" class="p-4"></div>
 </div>
 
-<!-- Orders -->
+<!-- ORDERS -->
 <div id="ordersPage" class="page">
     <div id="ordersList" class="p-4"></div>
 </div>
 
-<!-- Ads -->
+<!-- ADS -->
 <div id="adsPage" class="page">
     <div id="myAdsList" class="p-4"></div>
 </div>
 
-<!-- Profile -->
-<div id="profilePage" class="page">
-    <div class="p-4">Profile</div>
-</div>
-
-<!-- NAV -->
+<!-- BOTTOM NAV -->
 <div class="fixed bottom-0 w-full flex justify-around border-t bg-white p-3">
-    <div id="nav-p2p" class="nav-item active" onclick="changeNav('p2p',0)">P2P</div>
-    <div id="nav-orders" class="nav-item" onclick="changeNav('orders',1)">Orders</div>
-    <div id="nav-ads" class="nav-item" onclick="changeNav('ads',2)">Ads</div>
-    <div id="nav-profile" class="nav-item" onclick="changeNav('profile',3)">Profile</div>
+
+    <div id="nav-p2p" class="nav-item active" onclick="changeNav('p2p',0)">
+        <i class="fa-solid fa-house text-xl"></i><br>P2P
+    </div>
+
+    <div id="nav-orders" class="nav-item" onclick="changeNav('orders',1)">
+        <i class="fa-solid fa-receipt text-xl"></i><br>Orders
+    </div>
+
+    <div id="nav-ads" class="nav-item" onclick="changeNav('ads',2)">
+        <i class="fa-solid fa-bullhorn text-xl"></i><br>Ads
+    </div>
+
+    <div id="nav-profile" class="nav-item" onclick="changeNav('profile',3)">
+        <i class="fa-solid fa-user text-xl"></i><br>Profile
+    </div>
+
 </div>
 
-<!-- FIREBASE -->
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-
+<!-- APP -->
 <script type="module" src="src/js/main.js"></script>
 
 </body>
