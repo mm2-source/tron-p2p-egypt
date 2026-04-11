@@ -13,16 +13,33 @@
         .page { display: none; padding-bottom: 100px; }
         .page-active { display: block; }
         
-        .tab-btn { padding-bottom: 8px; color: #666; font-size: 15px; border-bottom: 3px solid transparent; }
-        .tab-btn.active { border-bottom: 3px solid #000; color: #000; font-weight: 900; }
+        .tab-btn { 
+            padding-bottom: 8px; 
+            color: #666; 
+            font-size: 15px; 
+            border-bottom: 3px solid transparent; 
+            font-weight: 600;
+        }
+        .tab-btn.active { 
+            border-bottom: 3px solid #000; 
+            color: #000; 
+            font-weight: 900; 
+        }
         
-        .nav-item { color: #666; cursor: pointer; text-align: center; font-size: 10px; transition: all 0.2s; }
-        .nav-item.active { color: #000; font-weight: bold; }
+        .nav-item { 
+            color: #666; 
+            cursor: pointer; 
+            text-align: center; 
+            font-size: 10px; 
+            transition: all 0.2s; 
+        }
+        .nav-item.active { 
+            color: #000; 
+            font-weight: bold; 
+        }
         
-        .price-font { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 1.1rem; }
-        .pay-tag { font-size: 10px; padding: 2px 6px; border-radius: 2px; font-weight: bold; }
-        
-        .submit-btn { transition: all 0.3s; }
+        .price-font { font-family: 'Inter', sans-serif; font-weight: 800; }
+        .submit-btn { transition: all 0.3s; font-size: 16px; }
     </style>
 </head>
 <body>
@@ -77,45 +94,48 @@
         <i class="fa-solid fa-xmark text-2xl" onclick="showPage('p2p')"></i>
         <h2 class="text-xl font-bold">نشر إعلان</h2>
     </div>
-    <div class="space-y-5">
-        <div class="bg-gray-100 p-1 rounded-xl flex">
+    <div class="space-y-6">
+        <div class="bg-gray-100 p-1 rounded-2xl flex">
             <button id="formBuy" onclick="setFormType('buy')" 
-                    class="flex-1 py-3 rounded-lg font-bold bg-white text-green-600 shadow-sm">شراء</button>
+                    class="flex-1 py-4 rounded-2xl font-bold bg-white text-green-600 shadow">شراء</button>
             <button id="formSell" onclick="setFormType('sell')" 
-                    class="flex-1 py-3 rounded-lg font-bold text-gray-400">بيع</button>
+                    class="flex-1 py-4 rounded-2xl font-bold text-gray-400">بيع</button>
         </div>
 
-        <input id="inPrice" type="number" placeholder="السعر (EGP)" class="w-full p-4 bg-gray-50 rounded-xl outline-none font-bold text-xl price-font">
-        <input id="inAmount" type="number" placeholder="الكمية (USDT)" class="w-full p-4 bg-gray-50 rounded-xl outline-none font-bold text-xl price-font">
+        <input id="inPrice" type="number" placeholder="السعر (EGP)" class="w-full p-5 bg-gray-50 rounded-2xl outline-none font-bold text-2xl price-font">
+        <input id="inAmount" type="number" placeholder="الكمية (USDT)" class="w-full p-5 bg-gray-50 rounded-2xl outline-none font-bold text-2xl price-font">
 
-        <div class="grid grid-cols-2 gap-3">
-            <input id="inMin" type="number" placeholder="الحد الأدنى" class="p-4 bg-gray-50 rounded-xl outline-none font-bold">
-            <input id="inMax" type="number" placeholder="الحد الأقصى" class="p-4 bg-gray-50 rounded-xl outline-none font-bold">
+        <div class="grid grid-cols-2 gap-4">
+            <input id="inMin" type="number" placeholder="الحد الأدنى" class="p-5 bg-gray-50 rounded-2xl outline-none font-bold">
+            <input id="inMax" type="number" placeholder="الحد الأقصى" class="p-5 bg-gray-50 rounded-2xl outline-none font-bold">
         </div>
 
-        <select id="inPayment" class="w-full p-4 bg-gray-50 rounded-xl font-bold outline-none">
+        <select id="inPayment" class="w-full p-5 bg-gray-50 rounded-2xl font-bold outline-none">
             <option value="Instapay">Instapay</option>
             <option value="Vodafone">Vodafone Cash</option>
             <option value="Bank">Bank Transfer</option>
         </select>
 
         <button id="submitBtn" onclick="validateAndSubmit()" 
-                class="w-full okx-bg-green py-4 rounded-full font-bold shadow-lg submit-btn">
+                class="w-full py-5 rounded-3xl font-bold text-lg shadow-lg submit-btn">
             تأكيد النشر
         </button>
     </div>
 </div>
 
 <!-- Bottom Navigation -->
-<div class="fixed bottom-0 w-full bg-white border-t border-gray-100 flex justify-around py-3 z-50">
-    <div onclick="showPage('p2p')" id="nav-p2p" class="nav-item active">
-        <i class="fa-solid fa-house-chimney text-2xl mb-1"></i><br>P2P
+<div class="fixed bottom-0 w-full bg-white border-t border-gray-100 flex justify-around py-4 z-50">
+    <div onclick="showPage('p2p')" id="nav-p2p" class="nav-item active flex flex-col items-center">
+        <i class="fa-solid fa-house-chimney text-2xl mb-1"></i>
+        <span>P2P</span>
     </div>
-    <div onclick="showPage('orders')" id="nav-orders" class="nav-item">
-        <i class="fa-solid fa-receipt text-2xl mb-1"></i><br>الطلبات
+    <div onclick="showPage('orders')" id="nav-orders" class="nav-item flex flex-col items-center">
+        <i class="fa-solid fa-receipt text-2xl mb-1"></i>
+        <span>الطلبات</span>
     </div>
-    <div onclick="showPage('ads')" id="nav-ads" class="nav-item">
-        <i class="fa-solid fa-bullhorn text-2xl mb-1"></i><br>إعلاناتي
+    <div onclick="showPage('ads')" id="nav-ads" class="nav-item flex flex-col items-center">
+        <i class="fa-solid fa-bullhorn text-2xl mb-1"></i>
+        <span>إعلاناتي</span>
     </div>
 </div>
 
