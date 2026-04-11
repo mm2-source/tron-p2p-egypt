@@ -21,7 +21,7 @@ async function validateAndSubmit() {
     if (type === 'sell') {
         const balance = await getUSDTBalance();
         if (balance < parseFloat(amount)) {
-            return Swal.fire('رصيد غير كافي', `رصيدك الحالي: ${balance.toFixed(2)} USDT`, 'warning');
+            return Swal.fire('رصيد غير كافي', `رصيدك: ${balance.toFixed(2)} USDT`, 'warning');
         }
     }
 
@@ -50,13 +50,13 @@ function setFormType(t) {
     const submitBtn = document.getElementById('submitBtn');
 
     if (t === 'buy') {
-        buyBtn.className = "flex-1 py-3 rounded-lg font-bold bg-white text-green-600 shadow-sm";
-        sellBtn.className = "flex-1 py-3 rounded-lg font-bold text-gray-400";
-        submitBtn.className = "w-full okx-bg-green py-4 rounded-full font-bold shadow-lg submit-btn";
+        buyBtn.className = "flex-1 py-4 rounded-2xl font-bold bg-white text-green-600 shadow";
+        sellBtn.className = "flex-1 py-4 rounded-2xl font-bold text-gray-400";
+        submitBtn.className = "w-full py-5 rounded-3xl font-bold text-lg shadow-lg submit-btn bg-emerald-600 text-white";
     } else {
-        sellBtn.className = "flex-1 py-3 rounded-lg font-bold bg-white text-red-600 shadow-sm";
-        buyBtn.className = "flex-1 py-3 rounded-lg font-bold text-gray-400";
-        submitBtn.className = "w-full bg-red-500 text-white py-4 rounded-full font-bold shadow-lg submit-btn";
+        sellBtn.className = "flex-1 py-4 rounded-2xl font-bold bg-white text-red-600 shadow";
+        buyBtn.className = "flex-1 py-4 rounded-2xl font-bold text-gray-400";
+        submitBtn.className = "w-full py-5 rounded-3xl font-bold text-lg shadow-lg submit-btn bg-red-500 text-white";
     }
 }
 
@@ -89,7 +89,6 @@ function renderMyAds(tab, btn) {
             <div class="text-center mt-20">
                 <i class="fa-solid fa-magnifying-glass text-6xl text-gray-300 mx-auto block"></i>
                 <p class="mt-6 text-xl font-medium">لم يتم العثور على إعلانات</p>
-                <p class="text-gray-500 mt-2">أنشئ إعلاناً الآن</p>
                 <button onclick="showPage('create')" class="mt-10 bg-black text-white px-12 py-4 rounded-3xl font-bold">
                     إنشاء إعلان
                 </button>
@@ -97,14 +96,11 @@ function renderMyAds(tab, btn) {
         return;
     }
 
-    // عرض الإعلانات (مختصر)
     container.innerHTML = filtered.map(a => `
         <div class="p-4 border border-gray-100 rounded-2xl bg-white shadow-sm">
-            <div class="flex justify-between">
-                <span class="\( {a.type==='buy' ? 'text-green-600' : 'text-red-600'} font-bold"> \){a.type.toUpperCase()} USDT</span>
-            </div>
+            <span class="\( {a.type==='buy' ? 'text-green-600' : 'text-red-600'} font-bold"> \){a.type.toUpperCase()} USDT</span>
             <div class="text-2xl font-black price-font mt-2">${a.price} EGP</div>
-            <div class="text-sm text-gray-500">${a.amount} USDT • \( {a.min}- \){a.max} EGP</div>
+            <div class="text-sm text-gray-500">${a.amount} USDT</div>
         </div>
     `).join('');
 }
@@ -120,16 +116,18 @@ function renderOrders(status) {
 
     container.innerHTML = filtered.map(o => `
         <div class="p-4 border rounded-2xl bg-gray-50">
-            <div class="flex justify-between text-xs text-gray-500">
-                <span>${o.orderId}</span>
-                <span class="text-blue-500 cursor-pointer">دردشة</span>
+            <div class="flex justify-between text-xs">
+                <span class="font-mono">${o.orderId}</span>
+                <span class="text-blue-500">دردشة</span>
             </div>
-            <div class="font-bold mt-1">${o.type === 'buy' ? 'بيع' : 'شراء'} USDT</div>
+            <div class="font-bold mt-2">${o.type === 'buy' ? 'بيع' : 'شراء'} USDT</div>
             <div class="text-lg">${o.price} EGP</div>
             ${status === 'pending' ? `
-            <div class="flex gap-3 mt-4">
-                <button onclick="updateStatus('${o.orderId}', 'cancelled')" class="flex-1 py-3 bg-white border rounded-3xl text-sm">إلغاء</button>
-                <button onclick="updateStatus('${o.orderId}', 'completed')" class="flex-1 py-3 bg-black text-white rounded-3xl text-sm">تأكيد</button>
+            <div class="flex gap-3 mt-5">
+                <button onclick="updateStatus('${o.orderId}', 'cancelled')" 
+                        class="flex-1 py-3 bg-white border border-gray-300 rounded-3xl text-sm font-medium">ملغي</button>
+                <button onclick="updateStatus('${o.orderId}', 'completed')" 
+                        class="flex-1 py-3 bg-emerald-600 text-white rounded-3xl text-sm font-medium">مكتملة</button>
             </div>` : ''}
         </div>
     `).join('');
@@ -137,20 +135,20 @@ function renderOrders(status) {
 
 function updateStatus(id, newStatus) {
     const order = orders.find(o => o.orderId === id);
-    if (order) order.status = newStatus;
-    renderOrders('pending');
-    Swal.fire('تم التحديث', '', 'success');
+    if (order) {
+        order.status = newStatus;
+        renderOrders('pending');
+        Swal.fire('تم التحديث', '', 'success');
+    }
 }
 
 function setMarket(t, b) {
     marketType = t;
     document.querySelectorAll('#p2pPage .tab-btn').forEach(btn => btn.classList.remove('active'));
     b.classList.add('active');
-    renderMarket();
 }
 
 function renderMarket() {
-    // مؤقت - هنكمله بعدين
     document.getElementById('marketList').innerHTML = `<div class="text-center mt-20 text-gray-400">لا توجد إعلانات حالياً</div>`;
 }
 
