@@ -1,118 +1,268 @@
 import { connectWallet, getUSDTBalance, tronWebInstance } from './tron.js';
+import * as ui from './ui.js';
 
-// --- Firebase تهيئة ---
-const firebaseConfig = { /* بياناتك هنا */ };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const rtdb = firebase.database();
 
-let currentMarket = 'buy';
-let currentAdTab = 'active';
+let marketType = 'buy'; 
+let currentOrderId = null;
+let chatListener = null;
 
-// 1. التنقل بين الصفحات والـ Indicator
-window.changeNav = (pageId, index) => {
-    // تحريك الـ Indicator الأسود
-    const positions = ['2.5%', '27.5%', '52.5%', '77.5%'];
-    document.getElementById('indicator').style.right = positions[index];
-    
-    // تحديث الألوان
-    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-    document.querySelectorAll('.nav-item')[index].classList.add('active');
-    
-    // إظهار الصفحة
-    showPage(pageId);
-};
+const ESCROW_CONTRACT = "PUT_YOUR_CONTRACT_HERE"; // 👈 حط عقدك هنا
 
-window.showPage = (id) => {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('page-active'));
-    const target = document.getElementById(id + 'Page');
-    if (target) target.classList.add('page-active');
-    
-    if(id === 'p2p') renderMarket();
-    if(id === 'orders') renderOrders('pending');
-    if(id === 'ads') renderMyAds();
-};
+// ================== نشر إعلان ==================
+async function validateAndSubmit() {
+    if (!(await connectWallet())) return;
 
-// 2. منطق الحجز والتحقق (نشر الإعلان)
-window.validateAndSubmit = async () => {
     const isBuy = document.getElementById('formBuy').classList.contains('bg-white');
-    const type = isBuy ? 'buy' : 'sell'; // buy = بيع التاجر (أخضر)
-    const amount = parseFloat(document.getElementById('inAmount').value);
+    const type = isBuy ? 'buy' : 'sell';
+
+    const price = +inPrice.value;
+    const amount = +inAmount.value;
+    const min = +inMin.value;
+    const max = +inMax.value;
+    const payment = inPayment.value;
+
     const myAddr = tronWebInstance.defaultAddress.base58;
 
-    if(type === 'buy') {
+    if (!price || !amount) return Swal.fire("خطأ", "كمل البيانات", "warning");
+
+    // 🔥 إعلان بيع (أخضر) = لازم نحجز USDT
+    if (type === 'buy') {
         const bal = await getUSDTBalance(myAddr);
-        if(bal < amount) return Swal.fire("رصيد ناقص", "لا يمكن نشر إعلان بيع أخضر بدون رصيد USDT للحجز", "error");
-        console.log("Contract: Locking " + amount + " USDT...");
+
+        if (bal < amount) {
+            return Swal.fire("رصيد غير كافي", "لازم يكون معاك USDT", "error");
+        }
+
+        // 🔥 مكان الحجز الحقيقي
+        try {
+            /*
+            const contract = await tronWebInstance.contract().at(ESCROW_CONTRACT);
+            await contract.lockUSDT(amount * 1e6).send();
+            */
+
+            console.log("LOCKED:", amount);
+        } catch(e) {
+            return Swal.fire("خطأ", "فشل حجز العملات", "error");
+        }
     }
 
     await db.collection("ads").add({
-        type, amount, price: document.getElementById('inPrice').value,
-        owner: myAddr, status: 'active', createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        type, price, amount, min, max, payment,
+        owner: myAddr,
+        status: 'active',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+
+    Swal.fire("تم", "الإعلان نزل في السوق", "success");
     showPage('p2p');
-};
+}
 
-// 3. صفحة إعلاناتي (تصميم OKX)
-function renderMyAds() {
-    const myAddr = tronWebInstance.defaultAddress.base58;
-    const container = document.getElementById('adsContainer');
-    const emptyState = document.getElementById('emptyAds');
+// ================== السوق ==================
+function renderMarket() {
+    const container = document.getElementById('marketList');
+    const searchType = marketType;
 
-    db.collection("ads").where("owner", "==", myAddr).onSnapshot(snap => {
-        const ads = snap.docs.map(d => ({id: d.id, ...d.data()}));
-        const activeAds = ads.filter(a => a.status === 'active');
-        const inactiveAds = ads.filter(a => a.status !== 'active');
+    db.collection("ads")
+    .where("status", "==", "active")
+    .where("type", "==", searchType)
+    .onSnapshot(snap => {
 
-        document.getElementById('activeCount').innerText = activeAds.length;
-        document.getElementById('inactiveCount').innerText = inactiveAds.length;
-
-        const list = currentAdTab === 'active' ? activeAds : inactiveAds;
-        
-        if(list.length === 0) {
-            emptyState.style.display = 'flex';
-            container.innerHTML = '';
-        } else {
-            emptyState.style.display = 'none';
-            container.innerHTML = list.map(a => `
-                <div class="p-4 border rounded-xl shadow-sm">
-                    <div class="flex justify-between">
-                        <span class="font-bold ${a.type==='buy'?'text-green-500':'text-red-500'}">USDT / EGP</span>
-                        <span class="text-xs text-gray-400">${a.status}</span>
-                    </div>
-                    <div class="text-lg font-black mt-1">${a.price} EGP</div>
-                </div>
-            `).join('');
+        if (snap.empty) {
+            container.innerHTML = `<div class="text-center mt-20 text-gray-300">لا يوجد عروض</div>`;
+            return;
         }
+
+        container.innerHTML = snap.docs.map(doc => {
+            const a = doc.data();
+            const btnClass = a.type === 'buy' ? 'bg-green-500' : 'bg-red-500';
+
+            return `
+            <div class="border-b pb-5">
+                <div class="flex justify-between">
+                    <div>
+                        <div class="text-2xl font-black">${a.price} EGP</div>
+                        <div class="text-xs">متاح: ${a.amount} USDT</div>
+                        <div class="text-xs">الحد: ${a.min} - ${a.max}</div>
+                        <div class="text-xs font-bold mt-1">${a.payment}</div>
+                    </div>
+                    <button onclick="openOrder('${doc.id}')" class="${btnClass} text-white px-6 py-2 rounded-lg">
+                        ${marketType === 'buy' ? 'شراء' : 'بيع'}
+                    </button>
+                </div>
+            </div>`;
+        }).join('');
     });
 }
 
-// 4. منطق الإلغاء (زي المنصات الكبيرة)
-window.cancelOrder = async (orderId, orderType, isOwner) => {
-    // في إعلان البيع (أخضر): المشتري فقط يلغي
-    // في إعلان الشراء (أحمر): صاحب الإعلان فقط يلغي
-    let canCancel = false;
-    if(orderType === 'buy' && !isOwner) canCancel = true;
-    if(orderType === 'sell' && isOwner) canCancel = true;
+// ================== فتح طلب ==================
+async function openOrder(adId) {
+    if (!tronWebInstance) return Swal.fire("اربط المحفظة");
 
-    if(!canCancel) return Swal.fire("تنبيه", "لا يمكنك إلغاء هذا الطلب بناءً على قواعد المنصة", "info");
+    const adDoc = await db.collection("ads").doc(adId).get();
+    const ad = adDoc.data();
+    const myAddr = tronWebInstance.defaultAddress.base58;
 
-    const res = await Swal.fire({ title: 'هل أنت متأكد؟', text: "سيتم نقل الطلب لقائمة الملغي", showCancelButton: true });
-    if(res.isConfirmed) {
-        await db.collection("orders").doc(orderId).update({ status: 'cancelled' });
+    if (ad.owner === myAddr) return Swal.fire("لا يمكنك التعامل مع نفسك");
+
+    // 🔥 لو إعلان شراء (أحمر) → لازم البائع يكون معاه USDT
+    if (ad.type === 'sell') {
+        const bal = await getUSDTBalance(myAddr);
+        if (bal < ad.amount) return Swal.fire("معندكش USDT للبيع");
     }
+
+    const orderId = "ORD-" + Date.now();
+
+    await db.collection("orders").doc(orderId).set({
+        ...ad,
+        orderId,
+        buyerAddr: myAddr,
+        status: 'pending',
+        isPaid: false,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + (15 * 60 * 1000)
+    });
+
+    rtdb.ref('chats/' + orderId).push({
+        sender: "System",
+        text: "تم فتح الطلب"
+    });
+
+    Swal.fire("طلب جديد", "تم فتح الطلب", "success");
+
+    showPage('orders');
+}
+
+// ================== الطلبات ==================
+function renderOrders(status, btn=null) {
+    const container = document.getElementById('ordersList');
+    const myAddr = tronWebInstance?.defaultAddress?.base58;
+
+    db.collection("orders").where("status","==",status)
+    .onSnapshot(snap => {
+
+        const myOrders = snap.docs.filter(d => {
+            const o = d.data();
+            return o.owner === myAddr || o.buyerAddr === myAddr;
+        });
+
+        if (!myOrders.length) {
+            container.innerHTML = "لا يوجد طلبات";
+            return;
+        }
+
+        container.innerHTML = myOrders.map(doc => {
+            const o = doc.data();
+            const isOwner = o.owner === myAddr;
+
+            let timer = Math.max(0, o.expiresAt - Date.now());
+
+            return `
+            <div class="border p-3 rounded-xl">
+                <div>${o.price} EGP</div>
+                <div>${o.amount} USDT</div>
+                <div>${Math.floor(timer/60000)}:${Math.floor((timer%60000)/1000)}</div>
+
+                <button onclick="openChat('${o.orderId}')">شات</button>
+
+                ${o.status === 'pending' ? `
+                ${!o.isPaid && !isOwner ? `<button onclick="confirmPayment('${o.orderId}')">تم الدفع</button>`:''}
+                ${o.isPaid && isOwner ? `<button onclick="releaseCrypto('${o.orderId}')">تحرير</button>`:''}
+                ${(o.type === 'buy' && !isOwner) || (o.type === 'sell' && isOwner)
+                    ? `<button onclick="cancelOrder('${o.orderId}')">إلغاء</button>`:''}
+                `:''}
+            </div>`;
+        }).join('');
+    });
+}
+
+// ================== التحكم ==================
+window.confirmPayment = (id)=>{
+    db.collection("orders").doc(id).update({isPaid:true});
 };
 
-// 5. الشات وكلمة "تحرير العملات"
-window.confirmPayment = (id) => {
-    db.collection("orders").doc(id).update({ isPaid: true });
-    // إرسال رسالة شات تلقائية
-    rtdb.ref('chats/' + id).push({ sender: 'System', text: 'المشتري أكد الدفع، زر التحرير متاح الآن للتاجر.' });
+window.releaseCrypto = async (id)=>{
+    /*
+    🔥 هنا تحط كود العقد
+    await contract.release(orderId)
+    */
+
+    await db.collection("orders").doc(id).update({status:'completed'});
 };
 
-// ... البقية من RenderMarket و RenderOrders (موجودة في الرد السابق وشغالة 100%) ...
+window.cancelOrder = (id)=>{
+    db.collection("orders").doc(id).update({status:'cancelled'});
+};
 
-window.onload = async () => {
-    await connectWallet();
+// ================== الشات ==================
+window.openChat = (id)=>{
+    currentOrderId = id;
+    document.getElementById('chatBox').style.display='flex';
+
+    if(chatListener) rtdb.ref('chats/'+id).off();
+
+    chatListener = rtdb.ref('chats/'+id).on('value', snap=>{
+        const msgs = snap.val();
+        const box = document.getElementById('chatMessages');
+        box.innerHTML='';
+
+        if(msgs){
+            Object.values(msgs).forEach(m=>{
+                box.innerHTML += `<div>${m.sender}: ${m.text}</div>`;
+            });
+        }
+    });
+};
+
+window.sendChatMessage = ()=>{
+    if(!currentOrderId) return;
+
+    const txt = chatInput.value;
+    if(!txt) return;
+
+    const myAddr = tronWebInstance.defaultAddress.base58;
+
+    rtdb.ref('chats/'+currentOrderId).push({
+        sender: myAddr.slice(0,6),
+        text: txt
+    });
+
+    chatInput.value='';
+};
+
+// ================== إعلاناتي ==================
+function renderMyAds(){
+    const container = document.getElementById('myAdsList');
+    const myAddr = tronWebInstance?.defaultAddress?.base58;
+
+    db.collection("ads").where("owner","==",myAddr)
+    .onSnapshot(snap=>{
+        container.innerHTML = snap.docs.map(d=>{
+            const a = d.data();
+            return `<div>${a.price} - ${a.amount}</div>`;
+        }).join('');
+    });
+}
+
+// ================== Navigation ==================
+window.showPage = (id)=>{
+    ui.showPage(id);
+    if(id==='p2p') renderMarket();
+    if(id==='orders') renderOrders('pending');
+    if(id==='ads') renderMyAds();
+};
+
+window.validateAndSubmit = validateAndSubmit;
+window.setMarket = (t,b)=>{
+    marketType = t;
+    renderMarket();
+};
+
+window.setFormType = (t)=> ui.setFormType(t);
+
+window.onload = async ()=>{
+    try { await connectWallet(); } catch(e){}
     renderMarket();
 };
