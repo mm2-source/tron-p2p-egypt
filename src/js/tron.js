@@ -12,14 +12,22 @@ export async function connectWallet() {
 
     tronWebInstance = window.tronLink.tronWeb;
 
+    const addr = tronWebInstance.defaultAddress.base58;
+
+    document.getElementById("walletStatus").innerText =
+        addr.slice(0,4) + "..." + addr.slice(-4);
+
     return true;
 }
 
 export async function getUSDTBalance(address) {
     try {
-        const contract = await window.tronLink.tronWeb.contract().at(USDT_CONTRACT);
-        const balance = await contract.balanceOf(address).call();
-        return Number(balance) / 1e6;
+        const contract = await window.tronLink.tronWeb
+            .contract()
+            .at(USDT_CONTRACT);
+
+        const bal = await contract.balanceOf(address).call();
+        return Number(bal) / 1e6;
     } catch {
         return 0;
     }
