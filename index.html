@@ -3,140 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OKX P2P - Mustafa Edition</title>
+    <title>OKX P2P Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;700&display=swap');
-        body { background-color: #ffffff; font-family: 'IBM Plex Sans Arabic', sans-serif; -webkit-tap-highlight-color: transparent; }
-        .page { display: none; padding-bottom: 100px; }
+        body { background-color: #ffffff; font-family: 'IBM Plex Sans Arabic', sans-serif; overflow-x: hidden; }
+        .page { display: none; padding-bottom: 100px; animation: fadeIn 0.3s; }
         .page-active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        /* Bottom Nav Styling */
+        .nav-container { position: fixed; bottom: 0; width: 100%; background: #fff; border-top: 1px solid #eee; display: flex; justify-content: space-around; padding: 10px 0; z-index: 1000; }
+        .nav-item { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 25%; z-index: 2; cursor: pointer; color: #999; transition: color 0.3s; }
+        .nav-item.active { color: #000; }
+        
+        /* الـ Indicator الأسود المتحرك */
+        .nav-indicator { position: absolute; bottom: 8px; height: 45px; background: #f3f3f3; border-radius: 12px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1; width: 20%; }
+        
         .price-font { font-family: 'Inter', sans-serif; font-weight: 800; }
-        .nav-item.active { color: #000; font-weight: bold; }
-        .filter-badge { background: #f5f5f5; padding: 4px 10px; border-radius: 6px; font-size: 12px; display: flex; items-center; gap: 4px; }
-        .payment-line { border-right: 3px solid #fbbf24; padding-right: 8px; margin-top: 8px; }
-        #chatBox { position: fixed; inset: 0; background: white; z-index: 200; display: none; flex-direction: column; }
+        .tab-underline { position: absolute; bottom: 0; height: 2px; background: #000; transition: all 0.3s; }
+        .empty-state-icon { font-size: 60px; color: #e5e7eb; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
-<nav class="flex justify-between items-center p-4 bg-white sticky top-0 z-50 border-b">
+<nav class="flex justify-between items-center p-4 bg-white border-b sticky top-0 z-50">
     <div class="flex items-center gap-2">
         <span class="text-2xl font-black italic">OKX</span>
-        <div id="walletStatus" onclick="connectWallet()" class="text-[10px] bg-red-50 text-red-600 px-3 py-1 rounded-full font-bold cursor-pointer border border-red-100">ربط المحفظة</div>
+        <div id="walletStatus" onclick="connectWallet()" class="text-[10px] bg-red-50 text-red-600 px-3 py-1 rounded-full font-bold cursor-pointer">ربط المحفظة</div>
     </div>
-    <div class="flex gap-4">
-        <i class="fa-solid fa-plus text-lg" onclick="showPage('create')"></i>
-        <i class="fa-solid fa-magnifying-glass text-lg"></i>
-    </div>
+    <div class="flex gap-4"><i class="fa-solid fa-plus text-lg" onclick="showPage('create')"></i></div>
 </nav>
 
 <div id="p2pPage" class="page page-active">
     <div class="flex gap-8 px-4 border-b bg-white">
-        <button class="tab-btn active border-b-2 border-black py-2 font-bold" onclick="setMarket('buy', this)">شراء</button>
-        <button class="tab-btn py-2 text-gray-400 font-bold" onclick="setMarket('sell', this)">بيع</button>
+        <button class="tab-btn active font-bold py-2 border-b-2 border-black" onclick="setMarket('buy', this)">شراء</button>
+        <button class="tab-btn font-bold py-2 text-gray-400" onclick="setMarket('sell', this)">بيع</button>
     </div>
-
-    <div class="flex items-center justify-between px-4 py-3 bg-white border-b overflow-x-auto gap-3">
-        <div class="flex gap-2">
-            <div class="filter-badge">USDT <i class="fa-solid fa-chevron-down text-[8px]"></i></div>
-            <div class="filter-badge">المبلغ <i class="fa-solid fa-chevron-down text-[8px]"></i></div>
-            <div class="filter-badge">طرق الدفع <i class="fa-solid fa-chevron-down text-[8px]"></i></div>
-        </div>
-        <div class="flex items-center gap-2 text-xs font-bold">
-            EGP <i class="fa-solid fa-chevron-down text-[8px]"></i>
-            <i class="fa-solid fa-filter text-gray-400 border-r pr-2"></i>
-        </div>
-    </div>
-
     <div id="marketList" class="px-4 mt-2 space-y-4"></div>
 </div>
 
-<div id="ordersPage" class="page px-4">
-    <div class="flex gap-6 border-b mt-2 overflow-x-auto whitespace-nowrap">
-        <button onclick="renderOrders('pending', this)" class="order-tab active border-b-2 border-black pb-2 text-sm font-bold">قيد التنفيذ</button>
-        <button onclick="renderOrders('completed', this)" class="order-tab text-gray-400 pb-2 text-sm">مكتملة</button>
-        <button onclick="renderOrders('cancelled', this)" class="order-tab text-gray-400 pb-2 text-sm">ملغي</button>
+<div id="ordersPage" class="page">
+    <div class="flex px-4 border-b">
+        <button onclick="renderOrders('pending', this)" class="order-tab flex-1 py-3 text-sm font-bold border-b-2 border-black">قيد التنفيذ</button>
+        <button onclick="renderOrders('completed', this)" class="order-tab flex-1 py-3 text-sm text-gray-400">مكتملة</button>
+        <button onclick="renderOrders('cancelled', this)" class="order-tab flex-1 py-3 text-sm text-gray-400">ملغي</button>
     </div>
-    <div id="ordersList" class="mt-4 space-y-4"></div>
+    <div id="ordersList" class="px-4 mt-4 space-y-4"></div>
 </div>
 
-<div id="adsPage" class="page px-4">
-    <div class="flex justify-between items-center py-4">
-        <h2 class="font-bold text-lg">إعلاناتي النشطة</h2>
-        <button onclick="showPage('create')" class="text-xs bg-black text-white px-3 py-1 rounded-md">+ جديد</button>
+<div id="adsPage" class="page">
+    <div class="flex px-4 border-b items-center gap-6">
+        <button onclick="switchAdTab('active', this)" class="ad-tab py-3 text-sm font-bold border-b-2 border-black">نشط <span id="activeCount">0</span></button>
+        <button onclick="switchAdTab('inactive', this)" class="ad-tab py-3 text-sm text-gray-400">غير نشط <span id="inactiveCount">0</span></button>
     </div>
-    <div id="myAdsList" class="space-y-3"></div>
-</div>
-
-<div id="createPage" class="page px-4">
-    <div class="flex items-center gap-4 py-4 mb-4 border-b">
-        <i class="fa-solid fa-arrow-right" onclick="showPage('p2p')"></i>
-        <span class="font-bold">نشر عرض جديد</span>
-    </div>
-    <div class="space-y-4">
-        <div class="bg-gray-100 p-1 rounded-xl flex">
-            <button id="formBuy" onclick="setFormType('buy')" class="flex-1 py-3 rounded-lg font-bold bg-white text-green-600 shadow-sm">إعلان بيع (أخضر)</button>
-            <button id="formSell" onclick="setFormType('sell')" class="flex-1 py-3 rounded-lg font-bold text-gray-400">إعلان شراء (أحمر)</button>
+    
+    <div id="myAdsList" class="px-4">
+        <div id="emptyAds" class="flex flex-col items-center justify-center mt-32 text-center">
+            <i class="fa-solid fa-bullhorn empty-state-icon"></i>
+            <h3 class="text-lg font-bold mb-1">لم يتم العثور على إعلانات</h3>
+            <p class="text-xs text-gray-400 mb-6">أنشئ إعلاناً لشراء العملات الرقمية أو بيعها.</p>
+            <button onclick="showPage('create')" class="bg-black text-white px-10 py-3 rounded-full font-bold text-sm">إنشاء إعلان</button>
         </div>
-        <div class="space-y-1">
-            <label class="text-xs font-bold text-gray-500 mr-2">السعر (EGP)</label>
-            <input id="inPrice" type="number" placeholder="0.00" class="w-full p-4 bg-gray-50 rounded-xl outline-none price-font text-xl border">
-        </div>
-        <div class="space-y-1">
-            <label class="text-xs font-bold text-gray-500 mr-2">الكمية الكلية (USDT)</label>
-            <input id="inAmount" type="number" placeholder="0.00" class="w-full p-4 bg-gray-50 rounded-xl outline-none price-font border">
-        </div>
-        <div class="flex gap-2">
-            <div class="flex-1">
-                <label class="text-[10px] font-bold text-gray-400 mr-2">الحد الأدنى</label>
-                <input id="inMin" type="number" placeholder="EGP" class="w-full p-3 bg-gray-50 rounded-xl outline-none border">
-            </div>
-            <div class="flex-1">
-                <label class="text-[10px] font-bold text-gray-400 mr-2">الحد الأقصى</label>
-                <input id="inMax" type="number" placeholder="EGP" class="w-full p-3 bg-gray-50 rounded-xl outline-none border">
-            </div>
-        </div>
-        <select id="inPayment" class="w-full p-4 bg-gray-50 rounded-xl font-bold border outline-none">
-            <option value="Instapay">Instapay</option>
-            <option value="Vodafone Cash">Vodafone Cash</option>
-            <option value="Bank Transfer">Bank Transfer</option>
-        </select>
-        <button onclick="validateAndSubmit()" class="w-full py-4 rounded-full font-bold bg-black text-white shadow-xl mt-4">نشر الإعلان في السوق</button>
+        <div id="adsContainer" class="mt-4 space-y-3"></div>
     </div>
 </div>
 
-<div id="chatBox">
-    <div class="p-4 border-b flex justify-between items-center bg-white sticky top-0">
-        <div class="flex items-center gap-2">
-            <i class="fa-solid fa-chevron-right" onclick="closeChat()"></i>
-            <span id="chatOrderTitle" class="font-bold">المحادثة</span>
-        </div>
-        <div class="text-[10px] text-red-500 font-bold bg-red-50 px-2 py-1 rounded">عداد: <span id="orderTimer">15:00</span></div>
-    </div>
-    <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50"></div>
-    <div class="p-4 border-t bg-white flex gap-2 mb-2">
-        <input id="chatInput" type="text" placeholder="اكتب رسالة..." class="flex-1 p-3 bg-gray-100 rounded-full px-5 outline-none">
-        <button onclick="sendChatMessage()" class="bg-black text-white w-12 h-12 rounded-full flex items-center justify-center"><i class="fa-solid fa-paper-plane"></i></button>
-    </div>
+<div class="nav-container">
+    <div id="indicator" class="nav-indicator" style="right: 2.5%;"></div>
+    <div onclick="changeNav('p2p', 0)" class="nav-item active"><i class="fa-solid fa-house text-lg"></i><span class="text-[9px] mt-1">P2P</span></div>
+    <div onclick="changeNav('orders', 1)" class="nav-item"><i class="fa-solid fa-receipt text-lg"></i><span class="text-[9px] mt-1">الطلبات</span></div>
+    <div onclick="changeNav('ads', 2)" class="nav-item"><i class="fa-solid fa-bullhorn text-lg"></i><span class="text-[9px] mt-1">إعلاناتي</span></div>
+    <div onclick="changeNav('profile', 3)" class="nav-item"><i class="fa-solid fa-user text-lg"></i><span class="text-[9px] mt-1">صفحتي</span></div>
 </div>
-
-<div class="fixed bottom-0 w-full bg-white border-t flex justify-around py-3 z-50">
-    <div onclick="showPage('p2p')" id="nav-p2p" class="nav-item cursor-pointer text-center active">
-        <i class="fa-solid fa-house text-xl"></i><br><span class="text-[10px]">P2P</span>
-    </div>
-    <div onclick="showPage('orders')" id="nav-orders" class="nav-item cursor-pointer text-center text-gray-400">
-        <i class="fa-solid fa-receipt text-xl"></i><br><span class="text-[10px]">الطلبات</span>
-    </div>
-    <div onclick="showPage('ads')" id="nav-ads" class="nav-item cursor-pointer text-center text-gray-400">
-        <i class="fa-solid fa-bullhorn text-xl"></i><br><span class="text-[10px]">إعلاناتي</span>
-    </div>
-</div>
-
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
 <script type="module" src="src/js/main.js"></script>
 </body>
