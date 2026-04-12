@@ -377,4 +377,100 @@ function renderOrders() {
                             ${amIBuyer && !o.isPaid ? `<button onclick="confirmPay('${doc.id}')" class="bg-black text-white px-5 py-2 rounded-lg text-xs font-bold">تم الدفع</button>` : ''}
                             ${amISeller && o.isPaid ? `<button onclick="releaseCrypto('${doc.id}')" class="bg-green-600 text-white px-5 py-2 rounded-lg text-xs font-bold">تحرير العملات</button>` : ''}
                             ${amISeller && !o.isPaid ? `<span class="text-orange-500 text-[10px] font-bold">انتظار الدفع...</span>` : ''}
-                            ${((o.type === 'buy' && !isOwner) || (o.type === 'sell' && isOwner)) ? `<button onclick="cancelReq('${doc.id}')" class="text-red-500 text-[9px] mt-1 font-bold">إلغاء الطلب</button
+                            ${((o.type === 'buy' && !isOwner) || (o.type === 'sell' && isOwner)) ? `<button onclick="cancelReq('${doc.id}')" class="text-red-500 text-[9px] mt-1 font-bold">إلغاء الطلب</button>` : ''}
+                        ` : ''}
+                    </div>
+                </div>
+            </div>`;
+        }
+        list.innerHTML = html || "<p class='text-center text-gray-400 mt-10 text-xs'>لا يوجد طلبات حالياً</p>";
+    });
+}
+
+// --- [9. منطق الدردشة الفورية] ---
+function openChat(id, time) {
+    activeOrderId = id;
+    document.getElementById('chatOverlay').style.display = 'flex';
+    document.getElementById('chatHeaderName').innerText = "رقم الطلب: " + id;
+    
+    clearInterval(timerInt);
+    timerInt = setInterval(() => {
+        const remain = (time + (15 * 60 * 1000)) - Date.now();
+        if(remain <= 0) { document.getElementById('timerDisplay').innerText = "انتهى الوقت"; clearInterval(timerInt); }
+        else {
+            const m = Math.floor(remain / 60000), s = Math.floor((remain % 60000) / 1000);
+            document.getElementById('timerDisplay').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+    }, 1000);
+
+    rtdb.ref('chats/' + id).on('value', snap => {
+        const data = snap.val() ? Object.values(snap.val()) : [];
+        const myAddr = tronWeb.defaultAddress.base58;
+        document.getElementById('chatBody').innerHTML = data.map(m => `
+            <div class="flex ${m.sender === myAddr ? 'justify-end' : 'justify-start'}">
+                <div class="max-w-[80%] p-3 rounded-2xl text-sm ${m.sender === myAddr ? 'bg-black text-white rounded-br-none' : 'bg-white border text-black rounded-bl-none shadow-sm'}">
+                    ${m.text}
+                </div>
+            </div>`).join('');
+        const b = document.getElementById('chatBody'); b.scrollTop = b.scrollHeight;
+    });
+}
+    function sendMsg() {
+    const inp = document.getElementById('chatInput');
+    if(!inp.value || !activeOrderId) return;
+    rtdb.ref('chats/' + activeOrderId).push({ sender: tronWeb.defaultAddress.base58, text: inp.value, time: Date.now() });
+    inp.value = "";
+}
+
+function closeChat() { document.getElementById('chatOverlay').style.display = 'none'; clearInterval(timerInt); }
+
+// --- [10. عمليات الطلب] ---
+function confirmPay(id) { db.collection("orders").doc(id).update({ isPaid: true }); }
+
+async function releaseCrypto(id) {
+    await db.collection("orders").doc(id).update({ status: 'completed' });
+    Swal.fire("تم تحرير العملات بنجاح");
+}
+
+function cancelReq(id) {
+    Swal.fire({title: 'إلغاء؟', icon: 'warning', showCancelButton: true}).then(r => {
+        if(r.isConfirmed) db.collection("orders").doc(id).update({ status: 'cancelled' });
+    });
+}
+
+// --- [11. إدارة إعلاناتي] ---
+function filterMyAds(f, btn) {
+    currentAdFilter = f;
+    document.querySelectorAll('#adsPage .tab-active').forEach(b => b.classList.remove('tab-active'));
+    btn.classList.add('tab-active');
+    renderMyAds();
+}
+
+function renderMyAds() {
+    const container = document.getElementById('myAdsList');
+    const myAddr = tronWeb?.defaultAddress?.base58;
+    if(!myAddr) return;
+
+    db.collection("ads").where("owner", "==", myAddr).onSnapshot(snap => {
+        const ads = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        const filtered = ads.filter(a => currentAdFilter === 'active' ? a.status === 'active' : a.status !== 'active');
+        document.getElementById('countActive').innerText = ads.filter(a => a.status === 'active').length;
+
+        container.innerHTML = filtered.map(a => `
+            <div class="p-4 border rounded-2xl">
+                <div class="flex justify-between mb-2">
+                    <span class="text-xs font-bold ${a.type==='buy'?'text-green-600':'text-red-600'}">${a.type==='buy'?'بيع':'شراء'}</span>
+                    <button onclick="toggleAd('${a.id}', '${a.status}')" class="text-[10px] text-blue-600 font-bold">تبديل الحالة</button>
+                </div>
+                <div class="text-xl font-black">${a.price} EGP</div>
+                <div class="text-[10px] text-gray-400 mt-1">${a.amount} USDT | ${a.payMethod}</div>
+            </div>`).join('');
+    });
+}
+
+function toggleAd(id, cur) { db.collection("ads").doc(id).update({ status: cur === 'active' ? 'inactive' : 'active' }); }
+
+window.onload = () => showPage('p2p');
+</script>
+</body>
+</html>
