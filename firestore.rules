@@ -1,0 +1,87 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && userId == request.auth.uid;
+    }
+    
+    function isValidAd(ad) {
+      return ad.keys().hasAll(['price', 'amount', 'min', 'max', 'payMethod', 'type', 'owner', 'status', 'createdAt']) &&
+             ad.price is string &&
+             ad.amount is string &&
+             ad.min is string &&
+             ad.max is string &&
+             ad.payMethod is string &&
+             ad.type in ['buy', 'sell'] &&
+             ad.owner is string &&
+             ad.status in ['active', 'inactive'] &&
+             ad.createdAt is number;
+    }
+    
+    function isValidOrder(order) {
+      return order.keys().hasAll(['adId', 'adOwner', 'taker', 'type', 'status', 'isPaid', 'createdAt']) &&
+             order.adId is string &&
+             order.adOwner is string &&
+             order.taker is string &&
+             order.type in ['buy', 'sell'] &&
+             order.status in ['pending', 'completed', 'cancelled'] &&
+             order.isPaid is bool &&
+             order.createdAt is number;
+    }
+    
+    // Ads collection rules
+    match /ads/{adId} {
+      allow read: if true; // Anyone can read ads
+      allow create: if isAuthenticated() && 
+                       isValidAd(resource) &&
+                       resource.data.owner == request.auth.uid;
+      allow update, delete: if isAuthenticated() && 
+                              resource.data.owner == request.auth.uid;
+    }
+    
+    // Orders collection rules
+    match /orders/{orderId} {
+      allow read: if isAuthenticated() && 
+                     (resource.data.adOwner == request.auth.uid || 
+                      resource.data.taker == request.auth.uid);
+      allow create: if isAuthenticated() && 
+                       isValidOrder(resource) &&
+                       (resource.data.adOwner == request.auth.uid || 
+                        resource.data.taker == request.auth.uid);
+      allow update: if isAuthenticated() && 
+                      (resource.data.adOwner == request.auth.uid || 
+                       resource.data.taker == request.auth.uid) &&
+                      // Only allow status changes according to business logic
+                      (request.resource.data.diff(resource.data).affectedKeys().hasAll(['status']) ||
+                       request.resource.data.diff(resource.data).affectedKeys().hasAll(['isPaid']) ||
+                       request.resource.data.diff(resource.data).affectedKeys().hasAll(['paidAt']) ||
+                       request.resource.data.diff(resource.data).affectedKeys().hasAll(['completedAt']) ||
+                       request.resource.data.diff(resource.data).affectedKeys().hasAll(['cancelledAt']));
+    }
+    
+    // Chats collection rules (Realtime Database style structure in Firestore)
+    match /chats/{chatId} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}
+
+// Realtime Database rules for chat
+{
+  "rules": {
+    "chats": {
+      "$chatId": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "$messageId": {
+          ".validate": "newData.hasChildren(['sender', 'text', 'time']) && newData.child('sender').isString() && newData.child('text').isString() && newData.child('time').isNumber()"
+        }
+      }
+    }
+  }
+}
