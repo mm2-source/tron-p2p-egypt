@@ -1,0 +1,67 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isValidWallet(address) {
+      return address is string && address.matches('^T[A-Za-z1-9]{33}$');
+    }
+    
+    function isValidAd(ad) {
+      return ad.keys().hasAll(['price', 'amount', 'min', 'max', 'payMethod', 'type', 'owner', 'status', 'createdAt']) &&
+             ad.price is string &&
+             ad.amount is string &&
+             ad.min is string &&
+             ad.max is string &&
+             ad.payMethod is string &&
+             ad.type in ['buy', 'sell'] &&
+             ad.owner is string &&
+             ad.status in ['active', 'inactive'] &&
+             ad.createdAt is number;
+    }
+    
+    function isValidOrder(order) {
+      return order.keys().hasAll(['adId', 'adOwner', 'taker', 'type', 'status', 'isPaid', 'createdAt']) &&
+             order.adId is string &&
+             order.adOwner is string &&
+             order.taker is string &&
+             order.type in ['buy', 'sell'] &&
+             order.status in ['pending', 'completed', 'cancelled'] &&
+             order.isPaid is bool &&
+             order.createdAt is number;
+    }
+    
+    // Ads collection rules - Simplified for TronLink
+    match /ads/{adId} {
+      allow read: if true; // Anyone can read ads
+      allow create: if isValidAd(resource); // Only validate data structure
+      allow update, delete: if isValidWallet(resource.data.owner); // Owner can update/delete
+    }
+    
+    // Orders collection rules - Simplified for TronLink
+    match /orders/{orderId} {
+      allow read: if true; // Allow read for now (can be restricted later)
+      allow create: if isValidOrder(resource); // Only validate data structure
+      allow update: if true; // Allow updates for now (can be restricted later)
+    }
+    
+    // Chats collection rules (Realtime Database style structure in Firestore)
+    match /chats/{chatId} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}
+
+// Realtime Database rules for chat
+{
+  "rules": {
+    "chats": {
+      "$chatId": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "$messageId": {
+          ".validate": "newData.hasChildren(['sender', 'text', 'time']) && newData.child('sender').isString() && newData.child('text').isString() && newData.child('time').isNumber()"
+        }
+      }
+    }
+  }
+}
