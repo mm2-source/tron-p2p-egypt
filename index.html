@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>P2P (New)</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+    <link rel="stylesheet" href="style.css" />
+
+    <!-- Firebase (uses existing firebase-config.js) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+  </head>
+
+  <body>
+    <div class="app">
+      <!-- Top Bar -->
+      <header class="topbar">
+        <div class="topbar__left">
+          <div class="brand">P2P</div>
+          <button id="connectBtn" class="chip chip--danger" type="button" onclick="connectWallet()">
+            <i class="fa-solid fa-link-slash"></i>
+            <span>ربط المحفظة</span>
+          </button>
+        </div>
+        <div class="topbar__right">
+          <button class="icon-btn" type="button" onclick="openCreateAd()">
+            <i class="fa-solid fa-plus"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Market Page -->
+      <main id="marketPage" class="page page--active">
+        <div class="tabs">
+          <button id="tabBuy" class="tab" type="button" onclick="setMarketTab('buy')">شراء</button>
+          <button id="tabSell" class="tab tab--active" type="button" onclick="setMarketTab('sell')">بيع</button>
+        </div>
+
+        <div class="marketHeader">
+          <div class="pill">
+            <span class="pill__dot"></span>
+            <span>USDT</span>
+          </div>
+          <div class="pill pill--muted"><span>EGP</span></div>
+        </div>
+
+        <section id="adsList" class="list">
+          <!-- Rendered by script.js -->
+        </section>
+      </main>
+
+      <!-- Create Ad Page -->
+      <main id="createAdPage" class="page">
+        <div class="subheader">
+          <button class="icon-btn" type="button" onclick="backToMarket()">
+            <i class="fa-solid fa-arrow-right"></i>
+          </button>
+          <div class="subheader__title">نشر إعلان جديد</div>
+        </div>
+
+        <div class="createWrap">
+          <div class="segmented">
+            <button id="createModeBuy" class="segmented__btn segmented__btn--active" type="button" onclick="setCreateMode('buy')">
+              شراء
+            </button>
+            <button id="createModeSell" class="segmented__btn" type="button" onclick="setCreateMode('sell')">
+              بيع
+            </button>
+          </div>
+
+          <section class="card">
+            <div class="card__title">السعر</div>
+            <div class="field">
+              <label class="label">السعر الإفرادي</label>
+              <div class="input">
+                <input id="priceIn" type="number" inputmode="decimal" placeholder="0.00" />
+                <span class="suffix">EGP</span>
+              </div>
+            </div>
+          </section>
+
+          <div class="divider"></div>
+
+          <section class="card">
+            <div class="card__title">الكمية</div>
+            <div class="field">
+              <label class="label">الكمية (USDT)</label>
+              <div class="input input--muted">
+                <input id="quantityIn" type="number" inputmode="decimal" placeholder="0.00" />
+                <span class="suffix">USDT</span>
+              </div>
+
+              <!-- SELL mode only: Max + wallet balance -->
+              <div id="sellOnlyBox" class="sellOnly" style="display: none">
+                <button id="maxBtn" class="maxBtn" type="button" onclick="fillMaxFromWallet()">الحد الأقصى</button>
+                <div class="subtext">المتاح: <span id="walletBalance">0.00</span> USDT</div>
+              </div>
+            </div>
+          </section>
+
+          <div class="divider"></div>
+
+          <section class="card">
+            <div class="card__title">حد المعاملة الواحدة</div>
+            <div class="limits">
+              <div class="input">
+                <input id="minLimitIn" type="number" inputmode="decimal" placeholder="الحد الأدنى (EGP)" />
+              </div>
+              <span class="tilde">~</span>
+              <div class="input">
+                <input id="maxLimitIn" type="number" inputmode="decimal" placeholder="الحد الأقصى (EGP)" />
+              </div>
+            </div>
+          </section>
+
+          <!-- Total Amount (Price * Quantity) -->
+          <div class="totalBar">
+            <div class="totalBar__label">المبلغ الإجمالي</div>
+            <div class="totalBar__value"><span id="totalAmount">0.00</span> EGP</div>
+          </div>
+
+          <button id="publishBtn" class="primaryBtn" type="button" disabled onclick="publishAd()">
+            نشر إعلان
+          </button>
+        </div>
+      </main>
+
+      <!-- Order Modal -->
+      <div id="orderOverlay" class="overlay" style="display: none">
+        <div class="modal">
+          <div class="modal__header">
+            <div>
+              <div id="orderTitle" class="modal__title">—</div>
+              <div class="modal__sub">السعر: <span id="orderPrice">0.00</span> EGP</div>
+            </div>
+            <button class="icon-btn" type="button" onclick="closeOrder()"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+
+          <div class="modal__body">
+            <div class="field">
+              <label class="label">الكمية (USDT)</label>
+              <div class="input">
+                <input id="orderQtyIn" type="number" inputmode="decimal" placeholder="0.00" oninput="validateOrder()" />
+                <span class="suffix">USDT</span>
+              </div>
+              <div class="subtext">المتاح في الإعلان: <span id="orderAvailable">0.00</span> USDT</div>
+              <div id="orderHint" class="hint" style="display: none"></div>
+            </div>
+
+            <button id="orderActionBtn" class="primaryBtn" type="button" disabled onclick="confirmOrder()">
+              متابعة
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toast -->
+      <div id="toast" class="toast" style="display: none"></div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
