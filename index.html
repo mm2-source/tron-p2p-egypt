@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>P2P Trading Platform</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="main-app">
+    <header class="flex justify-between items-center px-4 py-3 border-b sticky top-0 bg-white z-50">
+        <!-- Left Section -->
+        <div class="flex items-center gap-4">
+            <span class="text-2xl font-black tracking-tighter">P2P</span>
+            <div id="walletIndicator" onclick="connectTronLink()" class="text-[10px] bg-red-50 text-red-600 px-3 py-1 rounded-full font-bold cursor-pointer border border-red-100">
+                <i class="fa-solid fa-link-slash ml-1"></i> ربط المحفظة
+            </div>
+        </div>
+        
+        <!-- Right Section - Calculator Icon Only -->
+        <div class="flex items-center gap-4">
+            <svg class="w-5 h-5 text-gray-500 cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+            </svg>
+        </div>
+    </header>
+    
+    <div id="p2pPage" class="page page-active">
+        <!-- Row 1: Trading & Currency - RTL Layout -->
+        <div class="flex items-center justify-between px-4 py-4">
+            <!-- Right Side - Buy/Sell Tabs -->
+            <div class="flex" style="flex-direction: row-reverse !important;">
+                <button onclick="switchMarket('sell', this)" class="tab-active ripple-button py-4 px-4 text-black text-lg font-semibold" data-color="red">بيع</button>
+                <button onclick="switchMarket('buy', this)" class="ripple-button py-4 px-4 text-black text-lg font-semibold" data-color="green">شراء</button>
+            </div>
+            
+            <!-- Left Side - EGP Selector -->
+            <div class="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2">
+                <span class="text-sm font-medium text-gray-700">EGP</span>
+                <svg class="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+            </div>
+        </div>
+        
+        <!-- Row 2: Filtering & Selectors - RTL Layout -->
+        <div class="flex items-center justify-between px-4 py-3">
+            <!-- Far Right - USDT Selector -->
+            <div class="flex items-center gap-1 border border-gray-200 rounded-lg px-2 py-1.5">
+                <div class="w-3 h-3 bg-green-500 rounded-full flex items-center justify-center">
+                    <span class="text-white text-[6px] font-bold">T</span>
+                </div>
+                <span class="text-xs font-medium text-gray-700">USDT</span>
+                <svg class="w-2.5 h-2.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+            </div>
+            
+            <!-- Next to USDT - Amount -->
+            <div class="flex items-center gap-1">
+                <span class="text-xs text-gray-600">المبلغ</span>
+                <svg class="w-2.5 h-2.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+            </div>
+            
+            <!-- Next to Amount - Payment Methods -->
+            <div class="flex items-center gap-1">
+                <span class="text-xs text-gray-600">طرق الدفع</span>
+                <svg class="w-2.5 h-2.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+            </div>
+            
+            <!-- Far Left - Filter Icon -->
+            <div class="flex items-center gap-1">
+                <svg class="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                </svg>
+                <span class="text-xs text-gray-600">فلترة</span>
+            </div>
+        </div>
+        
+        <div id="marketList" class="p-4 space-y-6">
+            </div>
+    </div>
+
+    <div id="ordersPage" class="page">
+        <div class="flex border-b text-center">
+            <button onclick="filterOrders('pending', this)" class="flex-1 py-4 text-sm font-bold tab-active">قيد التنفيذ</button>
+            <button onclick="filterOrders('completed', this)" class="flex-1 py-4 text-sm text-gray-400">مكتمل</button>
+            <button onclick="filterOrders('cancelled', this)" class="flex-1 py-4 text-sm text-gray-400">ملغي</button>
+        </div>
+        <div id="ordersList" class="p-4 space-y-4"></div>
+    </div>
+
+    <div id="adsPage" class="page">
+        <div class="flex items-center justify-between border-b px-4 py-3">
+            <div class="flex gap-6">
+                <button onclick="filterMyAds('active', this)" class="py-4 text-sm font-bold tab-active">نشط (<span id="countActive">0</span>)</button>
+                <button onclick="filterMyAds('inactive', this)" class="py-4 text-sm text-gray-400">غير نشط</button>
+            </div>
+            
+            <!-- Create Ad Button -->
+            <button onclick="showPage('createAd')" class="w-8 h-8 flex items-center justify-center hover:bg-gray-100 transition-colors">
+                <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+            </button>
+        </div>
+        <div id="myAdsList" class="p-4 space-y-4"></div>
+    </div>
+
+    <div id="createAdPage" class="page px-4">
+        <div class="flex items-center gap-4 py-4">
+            <i class="fa-solid fa-arrow-right text-lg" onclick="navigateBackToHome()"></i>
+            <h2 class="font-bold text-lg">نشر إعلان جديد</h2>
+        </div>
+        
+        <div class="bg-gray-100 p-1 rounded-2xl flex flex-row-reverse mb-6">
+            <button id="modeBuy" onclick="setAdMode('buy')" class="flex-1 py-3 rounded-xl font-bold bg-green-600 text-white shadow-sm" data-color="green">شراء</button>
+            <button id="modeSell" onclick="setAdMode('sell')" class="flex-1 py-3 rounded-xl font-bold text-gray-400" data-color="red">بيع</button>
+        </div>
+
+        <div class="space-y-4">
+            <div class="bg-gray-50 p-4 rounded-2xl border border-black">
+                <label class="text-xs text-gray-500 block mb-1">سعر الصرف (1 USDT = ? EGP)</label>
+                <input id="priceIn" type="number" placeholder="0.00" class="w-full bg-transparent text-xl font-bold outline-none price-font border border-black">
+            </div>
+            <div class="bg-gray-50 p-4 rounded-2xl border border-black" id="amountContainer">
+                <label class="text-xs text-gray-500 block mb-1">الكمية الإجمالية (USDT)</label>
+                <input id="amountIn" type="number" placeholder="0.00" class="w-full bg-transparent text-xl font-bold outline-none price-font border border-black" 
+                       oninput="handleBalanceCheck(this)" 
+                       onfocus="handleBalanceCheck(this)">
+                <!-- Balance Display - Only for Sell Mode -->
+                <div id="sellModeBalance" class="mt-1 text-xs text-gray-500 font-medium" style="display: none;">
+                    <span id="sellBalanceText">Available: 0.00 USDT</span>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <div class="flex-1 bg-gray-50 p-4 rounded-2xl border border-black">
+                    <label class="text-xs text-gray-500 block mb-1">الحد الأدنى</label>
+                    <input id="minIn" type="number" placeholder="EGP" class="w-full bg-transparent font-bold outline-none border border-black">
+                </div>
+                <div class="flex-1 bg-gray-50 p-4 rounded-2xl border border-black">
+                    <label class="text-xs text-gray-500 block mb-1">الحد الأقصى</label>
+                    <input id="maxIn" type="number" placeholder="EGP" class="w-full bg-transparent font-bold outline-none border border-black">
+                </div>
+            </div>
+            <div class="bg-gray-50 p-4 rounded-2xl border border-black">
+                <label class="text-xs text-gray-500 block mb-1">طرق الدفع</label>
+                
+                <!-- Professional Dropdown Selector -->
+                <div class="relative">
+                    <div id="paymentSelector" onclick="togglePaymentDropdown()" class="flex items-center justify-between p-3 bg-white rounded-lg cursor-pointer hover:bg-gray-50 transition-colors border border-gray-200">
+                        <div class="flex items-center gap-2">
+                            <span id="selectedPaymentText" class="text-sm font-medium text-gray-700">Select payment method</span>
+                            <span id="paymentCheckmark" class="text-green-500 hidden">Checkmark</span>
+                        </div>
+                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+                    
+                    <!-- Dropdown Menu -->
+                    <div id="paymentDropdown" class="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 hidden">
+                        <div class="max-h-60 overflow-y-auto">
+                            <!-- Vodafone Cash -->
+                            <div onclick="selectPayment('Vodafone Cash')" class="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition-colors">
+                                <div class="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
+                                    <span class="text-white text-xs font-bold">V</span>
+                                </div>
+                                <span class="text-sm font-medium">Vodafone Cash</span>
+                            </div>
+                            
+                            <!-- InstaPay -->
+                            <div onclick="selectPayment('InstaPay')" class="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition-colors">
+                                <div class="w-6 h-6 bg-blue-500 rounded-lg flex items-center justify-center">
+                                    <span class="text-white text-xs font-bold">IP</span>
+                                </div>
+                                <span class="text-sm font-medium">InstaPay</span>
+                            </div>
+                            
+                            <!-- Banque Misr -->
+                            <div onclick="selectPayment('Banque Misr')" class="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition-colors">
+                                <div class="w-6 h-6 bg-green-700 rounded-lg flex items-center justify-center">
+                                    <span class="text-white text-xs font-bold">BM</span>
+                                </div>
+                                <span class="text-sm font-medium">Banque Misr</span>
+                            </div>
+                            
+                            <!-- Orange Cash -->
+                            <div onclick="selectPayment('Orange Cash')" class="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition-colors">
+                                <div class="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                                    <span class="text-white text-xs font-bold">O</span>
+                                </div>
+                                <span class="text-sm font-medium">Orange Cash</span>
+                            </div>
+                            
+                            <!-- Bank Transfer -->
+                            <div onclick="selectPayment('Bank Transfer')" class="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition-colors">
+                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                                </svg>
+                                <span class="text-sm font-medium">Bank Transfer</span>
+                            </div>
+                            
+                            <!-- Etisalat Cash -->
+                            <div onclick="selectPayment('Etisalat Cash')" class="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition-colors">
+                                <div class="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center">
+                                    <span class="text-white text-xs font-bold">E</span>
+                                </div>
+                                <span class="text-sm font-medium">Etisalat Cash</span>
+                            </div>
+                            
+                            <!-- Alex Bank -->
+                            <div onclick="selectPayment('Alex Bank')" class="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition-colors">
+                                <div class="w-6 h-6 bg-blue-700 rounded-lg flex items-center justify-center">
+                                    <span class="text-white text-xs font-bold">AB</span>
+                                </div>
+                                <span class="text-sm font-medium">Alex Bank</span>
+                            </div>
+                            
+                            <!-- CIB Bank -->
+                            <div onclick="selectPayment('CIB Bank')" class="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition-colors">
+                                <div class="w-6 h-6 bg-indigo-600 rounded-lg flex items-center justify-center">
+                                    <span class="text-white text-xs font-bold">CB</span>
+                                </div>
+                                <span class="text-sm font-medium">CIB Bank</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button id="publishButton" onclick="handlePublishAd()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold text-lg shadow-lg mt-4 transition-colors duration-300">نشر الإعلان</button>
+        </div>
+    </div>
+
+    <div id="chatOverlay">
+        <div class="flex items-center justify-between p-4 border-b">
+            <i class="fa-solid fa-xmark text-xl" onclick="closeChat()"></i>
+            <div class="text-center">
+                <div id="chatHeaderName" class="font-bold text-sm">رقم الطلب: ---</div>
+                <div id="timerDisplay" class="text-red-600 font-bold text-xs">15:00</div>
+            </div>
+            <i class="fa-solid fa-circle-info text-gray-400"></i>
+        </div>
+        <div id="chatBody" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50"></div>
+        <div class="p-4 border-t flex gap-2 items-center">
+            <input id="chatInput" type="text" placeholder="اكتب رسالتك..." class="flex-1 bg-gray-100 p-3 rounded-xl outline-none">
+            <button onclick="sendMsg()" class="w-12 h-12 bg-black text-white rounded-xl flex items-center justify-center"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <!-- OKX Style Trade Modal - Compact Version -->
+    <div id="tradeModalOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-[9998] hidden">
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl w-full max-w-md mx-auto shadow-2xl">
+                <!-- Professional Modal Header - Compact -->
+                <div class="flex items-center justify-between p-4 border-b">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                            <div class="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                                <span class="text-white text-[6px] font-bold">T</span>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 id="modalTitle" class="font-bold text-sm">شراء USDT</h3>
+                            <div class="text-xs text-gray-600 font-medium">السعر الإفرادي: <span id="modalPrice" class="font-bold text-black text-sm">0.00</span> EGP</div>
+                        </div>
+                    </div>
+                    <button onclick="closeTradeModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <i class="fa-solid fa-times text-sm"></i>
+                    </button>
+                </div>
+
+                <!-- Input Tabs Section - Compact -->
+                <div class="p-4">
+                    <div class="bg-gray-100 p-1 rounded-lg flex mb-4">
+                        <button id="amountTab" onclick="switchInputTab('amount')" class="flex-1 py-2 rounded-md font-semibold bg-white text-gray-800 transition-all text-sm">المبلغ</button>
+                        <button id="quantityTab" onclick="switchInputTab('quantity')" class="flex-1 py-2 rounded-md font-semibold text-gray-500 transition-all text-sm">الكمية</button>
+                    </div>
+
+                    <!-- Main Input Section - Compact -->
+                    <div class="mb-4">
+                        <!-- Amount Input (shown when amount tab is active) -->
+                        <div id="amountInputSection">
+                            <div class="relative mb-2">
+                                <input id="egpAmount" type="number" placeholder="0.00" 
+                                       class="w-full bg-gray-50 p-3 rounded-lg text-lg font-bold outline-none border border-black transition-all"
+                                       style="color: #6b7280;"
+                                       onfocus="this.style.color=''; this.value='';"
+                                       oninput="calculateTradeAmounts()">
+                                <button onclick="setMaxAmount()" 
+                                        id="maxAmountBtn"
+                                        class="absolute left-2 top-1/2 transform -translate-y-1/2 text-yellow-500 font-semibold text-sm hover:text-yellow-600 transition-colors">
+                                    الحد الأقصى EGP
+                                </button>
+                            </div>
+                            <div id="amountLimits" class="text-xs text-gray-500 mb-2">
+                                الحد <span id="limitRange">30,000.00 - 127,462.42</span> EGP
+                            </div>
+                            <div id="amountResult" class="text-sm text-gray-700 mb-2">
+                                ستحصل على <span id="willReceiveUSDT" class="font-bold text-green-600 text-sm">0.00</span> USDT
+                            </div>
+                        </div>
+
+                        <!-- Quantity Input (shown when quantity tab is active) -->
+                        <div id="quantityInputSection" style="display: none;">
+                            <div class="relative mb-2">
+                                <input id="usdtQuantity" type="number" placeholder="0.00" 
+                                       class="w-full bg-gray-50 p-3 rounded-lg text-lg font-bold outline-none border border-black transition-all"
+                                       style="color: #6b7280;"
+                                       onfocus="this.style.color=''; this.value='';"
+                                       oninput="calculateTradeAmounts()">
+                                <button onclick="setMaxQuantity()" 
+                                        id="maxQuantityBtn"
+                                        class="absolute left-2 top-1/2 transform -translate-y-1/2 text-yellow-500 font-semibold text-sm hover:text-yellow-600 transition-colors">
+                                    الحد الأقصى USDT
+                                </button>
+                            </div>
+                            <div id="quantityLimits" class="text-xs text-gray-500 mb-2">
+                                الحد <span id="quantityLimitRange">100.00 - 426.21</span> USDT
+                            </div>
+                            <div id="quantityResult" class="text-sm text-gray-700 mb-2">
+                                ستحصل على <span id="willReceiveEGP" class="font-bold text-green-600 text-sm">0.00</span> EGP
+                            </div>
+                        </div>
+
+                        <!-- Available Balance (for sell mode only) - Compact -->
+                        <div id="sellBalanceSection" class="bg-gray-50 p-2 rounded-lg mb-2" style="display: none;">
+                            <div class="text-xs text-gray-600">الرصيد المتوفر</div>
+                            <div class="font-bold text-sm"><span id="availableBalance">0.00</span> USDT</div>
+                        </div>
+                    </div>
+
+                    <!-- Trade Details Section - Compact -->
+                    <div class="border-t pt-3 mb-3">
+                        <h4 class="font-bold text-sm mb-2">معلومات المعلن</h4>
+                        
+                        <!-- Merchant Info - Compact -->
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                                <div class="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
+                                    <i class="fa-solid fa-user text-gray-600 text-xs"></i>
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-xs" id="advertiserName">Merchant_****</div>
+                                    <div class="flex items-center gap-1">
+                                        <i class="fa-solid fa-check-circle text-blue-500 text-[8px]"></i>
+                                        <span class="text-xs text-gray-500">موثوق</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-left">
+                                <div class="text-xs text-gray-500">معدل الإنجاز</div>
+                                <div class="font-semibold text-xs">98%</div>
+                            </div>
+                        </div>
+
+                        <!-- Payment Window - Compact -->
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="text-xs text-gray-600">نافذة الدفع</div>
+                            <div class="font-semibold text-xs">15 دقيقة</div>
+                        </div>
+
+                        <!-- Payment Method - Compact -->
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="text-xs text-gray-600">طريقة الدفع</div>
+                            <div id="paymentMethodDisplay" class="font-semibold text-xs">InstaPay</div>
+                        </div>
+                    </div>
+
+                    <!-- Professional Action Button - Compact -->
+                    <button id="tradeActionButton" onclick="executeTrade()" 
+                            class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-bold text-sm transition-all duration-300 shadow-lg ripple-button">
+                        اشترِ USDT بدون رسوم
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Ad Modal -->
+    <div id="editAdModal" class="fixed inset-0 bg-black bg-opacity-50 z-[9999] hidden">
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl w-full max-w-md mx-auto shadow-2xl">
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between p-6 border-b">
+                    <h3 class="font-bold text-lg">تعديل الإعلان</h3>
+                    <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fa-solid fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Edit Form -->
+                <div class="p-6 space-y-4">
+                    <div>
+                        <label class="text-sm text-gray-600 block mb-2">سعر الصرف (1 USDT = ? EGP)</label>
+                        <input id="editPrice" type="number" class="w-full bg-gray-50 p-4 rounded-xl text-lg font-bold outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="text-sm text-gray-600 block mb-2">الكمية الإجمالية (USDT)</label>
+                        <input id="editAmount" type="number" class="w-full bg-gray-50 p-4 rounded-xl text-lg font-bold outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="flex-1">
+                            <label class="text-sm text-gray-600 block mb-2">الحد الأدنى</label>
+                            <input id="editMin" type="number" class="w-full bg-gray-50 p-4 rounded-xl font-bold outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div class="flex-1">
+                            <label class="text-sm text-gray-600 block mb-2">الحد الأقصى</label>
+                            <input id="editMax" type="number" class="w-full bg-gray-50 p-4 rounded-xl font-bold outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-sm text-gray-600 block mb-2">طريقة الدفع</label>
+                        <select id="editPayMethod" class="w-full bg-gray-50 p-4 rounded-xl font-bold outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">اختر طريقة الدفع</option>
+                            <option value="Vodafone Cash">Vodafone Cash</option>
+                            <option value="InstaPay">InstaPay</option>
+                            <option value="Banque Misr">Banque Misr</option>
+                            <option value="Orange Cash">Orange Cash</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                            <option value="Etisalat Cash">Etisalat Cash</option>
+                            <option value="Alex Bank">Alex Bank</option>
+                            <option value="CIB Bank">CIB Bank</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-3 p-6 border-t">
+                    <button onclick="updateAd()" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors">
+                        <i class="fa-solid fa-save ml-2"></i> حفظ التعديلات
+                    </button>
+                    <button onclick="cancelEditAd()" class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-300 transition-colors">
+                        <i class="fa-solid fa-times ml-2"></i> إلغاء
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="fixed bottom-0 w-full bg-white border-t py-3 flex justify-around items-center z-50">
+        <div id="indicator" class="nav-indicator" style="right: 1.5%;"></div>
+        <div onclick="navTo('p2p', 0)" class="nav-item active flex flex-col items-center">
+            <i class="fa-solid fa-house-chimney text-lg"></i>
+            <span class="text-[10px] mt-1">الرئيسية</span>
+        </div>
+        <div onclick="navTo('orders', 1)" class="nav-item flex flex-col items-center">
+            <i class="fa-solid fa-file-invoice-dollar text-lg"></i>
+            <span class="text-[10px] mt-1">الطلبات</span>
+        </div>
+        <div onclick="navTo('ads', 2)" class="nav-item flex flex-col items-center">
+            <i class="fa-solid fa-bullhorn text-lg"></i>
+            <span class="text-[10px] mt-1">إعلاناتي</span>
+        </div>
+        <div onclick="navTo('profile', 3)" class="nav-item flex flex-col items-center">
+            <i class="fa-solid fa-user-gear text-lg"></i>
+            <span class="text-[10px] mt-1">حسابي</span>
+        </div>
+    </footer>
+</div>
+
+<!-- Custom Cancellation Modal -->
+<div id="cancelModal" class="fixed inset-0 bg-black bg-opacity-50 z-[9999] hidden">
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-md mx-auto shadow-2xl">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-center p-6 border-b">
+                <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-3">
+                    <i class="fa-solid fa-exclamation-triangle text-red-600 text-xl"></i>
+                </div>
+            </div>
+            
+            <!-- Modal Body -->
+            <div class="p-6 text-center">
+                <h3 class="font-bold text-lg mb-2">هل أنت متأكد من إلغاء هذا الإعلان؟</h3>
+                <p class="text-gray-600 text-sm mb-6">لا يمكن التراجع عن هذا الإجراء.</p>
+                
+                <!-- Action Buttons -->
+                <div class="flex gap-3">
+                    <button onclick="closeCancelModal()" class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-300 transition-colors">
+                        إلغاء
+                    </button>
+                    <button onclick="confirmCancelAction()" class="flex-1 bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700 transition-colors">
+                        تأكيد
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Global Toast Container -->
+<div id="toastContainer" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-[99999] pointer-events-none"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
