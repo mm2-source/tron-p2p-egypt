@@ -1,0 +1,772 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap');
+
+:root { --okx-black: #000000; --okx-gray: #f5f5f5; }
+body { font-family: 'IBM Plex Sans Arabic', sans-serif; background-color: #fff; margin: 0; padding: 0; font-size: 14px; overflow-x: hidden; width: 100%; }
+
+/* --- OKX Create Ad UI (RTL) --- */
+#createAdPage {
+    direction: rtl;
+}
+
+.create-ad-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    background: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 60;
+}
+
+.create-ad-container {
+    padding: 16px;
+    padding-bottom: 170px; /* space for fixed total + continue button */
+}
+
+.create-mode-toggle {
+    background: #f3f4f6;
+    padding: 4px;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: row-reverse;
+    gap: 4px;
+    margin-bottom: 16px;
+}
+
+.create-ad-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 24px !important;
+}
+
+.okx-section-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 12px;
+    text-align: right;
+}
+
+.okx-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.okx-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+    text-align: right;
+}
+
+.okx-input,
+.okx-select {
+    height: 48px;
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.12);
+    background: #f9fafb;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 10px;
+}
+
+.okx-input-el {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-size: 18px;
+    font-weight: 700;
+    text-align: right;
+}
+
+.okx-input-suffix {
+    font-size: 12px;
+    font-weight: 700;
+    color: #6b7280;
+    flex-shrink: 0;
+}
+
+.okx-subtext {
+    font-size: 12px;
+    color: #6b7280;
+    font-weight: 500;
+    text-align: right;
+}
+
+.okx-divider {
+    height: 1px;
+    background: rgba(0,0,0,0.06);
+}
+
+.okx-pill-toggle {
+    display: flex;
+    background: #f3f4f6;
+    padding: 4px;
+    border-radius: 999px;
+    gap: 4px;
+}
+
+.okx-pill {
+    flex: 1;
+    height: 36px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background: transparent;
+    font-weight: 700;
+    color: #6b7280;
+}
+
+.okx-pill-active {
+    background: #fff;
+    border-color: rgba(0,0,0,0.08);
+    color: #111827;
+}
+
+.okx-input-quantity {
+    background: #f3f4f6;
+}
+
+.okx-max-btn {
+    height: 28px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: #111827;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.okx-limits-row {
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    gap: 10px;
+}
+
+.okx-tilde {
+    color: #9ca3af;
+    font-weight: 700;
+}
+
+.okx-select {
+    cursor: pointer;
+    justify-content: space-between;
+}
+
+.okx-select-text {
+    font-weight: 700;
+    color: #111827;
+    font-size: 14px;
+}
+
+.okx-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+    z-index: 99999 !important;
+    overflow: hidden;
+}
+
+.okx-dropdown-item {
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+    background: #fff;
+    cursor: pointer;
+}
+
+.okx-dropdown-item:hover {
+    background: #f3f4f6;
+}
+
+/* Total bar sits cleanly above fixed button */
+.okx-total {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    bottom: 84px;
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 14px;
+    padding: 12px 14px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    z-index: 69;
+}
+
+.okx-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-direction: row-reverse;
+}
+
+.okx-total-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.okx-total-value {
+    font-size: 16px;
+    font-weight: 800;
+    color: #111827;
+}
+
+.okx-continue-btn {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    height: 52px;
+    border-radius: 14px;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 800;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+    transition: filter 0.2s ease, opacity 0.2s ease;
+    z-index: 70;
+}
+
+.okx-continue-btn:disabled {
+    background: #d1d5db !important;
+    color: #6b7280 !important;
+    box-shadow: none !important;
+    opacity: 1 !important;
+}
+
+#main-app { overflow-x: hidden; width: 100%; }
+/* Available text positioning in sell mode - OKX style - positioned below Max button */
+#sellModeBalance {
+    position: relative !important;
+    font-size: 10px !important;
+    color: #6b7280 !important;
+    font-weight: 500 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+    text-align: left !important;
+}
+
+/* Labels positioning */
+.bg-gray-50 label {
+    position: absolute !important;
+    top: -8px !important;
+    right: 12px !important;
+    background-color: white !important;
+    padding: 0 4px !important;
+    font-size: 10px !important;
+    color: #6b7280 !important;
+    font-weight: 500 !important;
+    z-index: 1 !important;
+}
+
+/* Fix for amount container label */
+#amountContainer label {
+    position: absolute !important;
+    top: -8px !important;
+    right: 12px !important;
+    background-color: white !important;
+    padding: 0 4px !important;
+    font-size: 10px !important;
+    color: #6b7280 !important;
+    font-weight: 500 !important;
+    z-index: 1 !important;
+}
+
+/* Navigation & Tabs */
+.page { display: none; padding-bottom: 90px; }
+.page-active { display: block; }
+.nav-item { color: #9ca3af; transition: all 0.3s; }
+.nav-item.active { color: #000; font-weight: bold; }
+.nav-indicator { position: absolute; bottom: 5px; height: 45px; background: #f3f4f6; border-radius: 12px; transition: all 0.3s ease; z-index: -1; width: 22%; }
+
+.tab-active { border-bottom: 3px solid #000; color: #000 !important; font-weight: bold; }
+.price-font { font-family: 'Inter', sans-serif; }
+
+/* Water Ripple Effect */
+.ripple-button {
+    position: relative;
+    overflow: hidden;
+}
+
+.ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.6);
+    transform: scale(0);
+    animation: ripple-animation 0.6s ease-out;
+    pointer-events: none;
+}
+
+@keyframes ripple-animation {
+    from {
+        transform: scale(0);
+        opacity: 1;
+    }
+    to {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+/* Chat Overlay */
+#chatOverlay { position: fixed; inset: 0; background: #fff; z-index: 9999; display: none; flex-direction: column; }
+
+/* UI Elements */
+.card-shadow { box-shadow: 0 2px 12px rgba(0,0,0,0.05); }
+input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* Input Container Styling */
+.input-container {
+    border: 1px solid black;
+    border-radius: 1rem;
+    padding: 1rem;
+    background-color: #f9fafb;
+    transition: border-color 0.3s ease;
+}
+
+.input-container.valid {
+    border-color: #22c55e;
+}
+
+.input-container.invalid {
+    border-color: #ef4444;
+}
+
+.input-container input {
+    background: transparent;
+    border: none;
+    outline: none;
+    font-weight: bold;
+}
+
+/* Clean input styling - remove all inner borders */
+input[type="number"] {
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    height: 24px !important;
+    font-size: 18px !important;
+    line-height: 24px !important;
+}
+
+input[type="number"]:focus {
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Slim input containers for OKX style - clean spacing */
+.bg-gray-50 {
+    padding: 0 12px !important;
+    height: 45px !important;
+    min-height: 45px !important;
+    max-height: 45px !important;
+    border: 1px solid black !important;
+    border-radius: 8px !important;
+    background-color: #f9fafb !important;
+    margin-bottom: 24px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    position: relative !important;
+}
+
+/* Ensure sections have clear breathing space */
+#createAdPage .space-y-4 > div {
+    margin-bottom: 30px !important;
+}
+
+/* If inputs are inside a flex container, stack them with spacing */
+#createAdPage .flex.gap-3 {
+    flex-direction: column !important;
+    gap: 24px !important;
+    margin-bottom: 30px !important;
+}
+
+/* Ensure amount container also has proper spacing */
+#amountContainer {
+    margin-bottom: 30px !important;
+}
+
+/* Additional spacing fixes for all input containers */
+#priceContainer,
+#minMaxContainer,
+#paymentContainer {
+    margin-bottom: 24px !important;
+}
+
+/* Fix any remaining input containers */
+.bg-gray-50 {
+    margin-bottom: 24px !important;
+}
+
+/* Ensure the last container doesn't create extra space */
+#publishButton {
+    margin-top: 30px !important;
+}
+
+/* Mandatory spacing for common form wrappers */
+.input-container, .input-group, .form-item {
+    margin-bottom: 24px !important;
+}
+
+/* Mandatory spacing (explicit selectors) */
+.input-group,
+.form-item {
+    margin-bottom: 24px !important;
+}
+
+/* Fix Alignment & Max Button - Quantity box with number on RIGHT and button on LEFT */
+.quantity-container { 
+    display: flex !important;
+    flex-direction: row-reverse !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+}
+.max-btn-container { order: 2; }
+input#total-quantity { text-align: right !important; order: 1; }
+
+/* Create Ad Quantity row: light gray background + proper padding */
+#amountContainer .quantity-container {
+    background-color: #f3f4f6 !important;
+    padding: 10px 12px !important;
+    border-radius: 10px !important;
+    width: 100% !important;
+    gap: 12px !important;
+    direction: ltr !important; /* far-left controls, far-right numeric */
+}
+
+#amountContainer .left-controls {
+    direction: rtl !important;
+    padding: 4px 6px !important;
+}
+
+#maxAmountBtn {
+    padding: 0 10px !important;
+}
+
+#sellModeBalance {
+    padding-top: 2px !important;
+    display: block;
+}
+
+/* Fix Payment Dropdown - Stop the overlap */
+.payment-method-box {
+    position: relative !important;
+    height: 45px !important;
+    overflow: hidden !important;
+}
+select#payment-select {
+    width: 100% !important;
+    height: 100% !important;
+    border: none !important;
+    appearance: none !important;
+}
+
+/* Remove all inner borders and lines from inputs with proper padding */
+.bg-gray-50 input,
+.bg-gray-50 input:focus,
+.bg-gray-50 input:active {
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    height: 29px !important;
+    font-size: 16px !important;
+    line-height: 29px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    flex: 1 !important;
+}
+
+/* Ensure compact design for all input containers in create ad page with OKX spacing */
+#createAdPage .space-y-4 > div {
+    height: 45px !important;
+    min-height: 45px !important;
+    max-height: 45px !important;
+    margin-bottom: 30px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+}
+
+/* Fix payment method container height */
+#createAdPage .space-y-4 > div:last-of-type {
+    height: auto !important;
+    min-height: 45px !important;
+}
+
+/* Special handling for amount container with max button - OKX layout with proper alignment */
+#amountContainer {
+    height: auto !important;
+    min-height: 45px !important;
+    padding: 8px 12px !important;
+    border: 1px solid black !important;
+    border-radius: 8px !important;
+    background-color: #f9fafb !important;
+    margin-bottom: 30px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+}
+
+/* Amount container input row - OKX layout with Max button and Available text on FAR LEFT */
+#amountContainer .flex {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
+    gap: 8px !important;
+}
+
+/* Left side container for Max button and Available text - FAR LEFT alignment */
+#amountContainer .left-controls {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+    margin-right: auto !important;
+    order: 1 !important;
+}
+
+/* Input container takes remaining space - RIGHT alignment for input value */
+#amountContainer .input-wrapper {
+    flex: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    margin-left: auto !important;
+    order: 2 !important;
+}
+
+/* Ensure input text is right-aligned in Sell mode */
+#amountContainer input {
+    text-align: right !important;
+    direction: rtl !important;
+}
+
+/* Special handling for payment method selector - OKX 45px height with proper centering */
+#paymentSelector {
+    height: 45px !important;
+    min-height: 45px !important;
+    max-height: 45px !important;
+    margin: 0 0 20px 0 !important;
+    padding: 0 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    background-color: #f9fafb !important;
+    border: 1px solid black !important;
+    border-radius: 8px !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    cursor: pointer !important;
+}
+
+/* Payment selector text centering - vertically centered */
+#paymentSelector span {
+    line-height: 1 !important;
+    vertical-align: middle !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+/* Payment selector container - fix overlap */
+#paymentSelector .flex {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    height: 100% !important;
+}
+
+/* Payment dropdown styling - OKX standard */
+#paymentDropdown {
+    background-color: #f5f5f5 !important;
+    border: 1px solid #e5e5e5 !important;
+    position: absolute !important;
+    top: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 99999 !important;
+    margin-top: 4px !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+}
+
+#paymentDropdown > div > div:hover {
+    background-color: white !important;
+}
+
+#paymentDropdown > div > div {
+    background-color: #f5f5f5 !important;
+    padding: 12px !important;
+    border-bottom: 1px solid #e5e5e5 !important;
+}
+
+#paymentDropdown > div > div:last-child {
+    border-bottom: none !important;
+}
+
+/* Max button styling - Compact pill-shaped OKX style - positioned above Available text */
+#maxAmountBtn {
+    width: 65px !important;
+    height: 20px !important;
+    font-size: 9px !important;
+    padding: 0 !important;
+    border-radius: 10px !important;
+    background-color: black !important;
+    color: white !important;
+    border: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s ease !important;
+    margin: 0 0 4px 0 !important;
+    flex-shrink: 0 !important;
+    line-height: 1 !important;
+    text-align: center !important;
+    font-weight: 600 !important;
+}
+
+#maxAmountBtn span {
+    white-space: nowrap !important;
+    font-size: 9px !important;
+    font-weight: 600 !important;
+}
+
+#maxAmountBtn:hover {
+    background-color: #333 !important;
+    transform: scale(1.05) !important;
+}
+
+#maxAmountBtn:active {
+    transform: scale(0.95) !important;
+}
+
+/* Toast Notification System */
+.toast {
+    position: relative;
+    min-width: 280px;
+    max-width: 400px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    color: white;
+    font-family: 'IBM Plex Sans Arabic', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    pointer-events: auto;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(10px);
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    overflow: hidden;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.toast.hide {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+}
+
+/* Toast States */
+.toast.error {
+    background: rgba(220, 53, 69, 0.9);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+.toast.success {
+    background: rgba(40, 167, 69, 0.9);
+    border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+/* Toast Icons */
+.toast-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.toast.error .toast-icon::before {
+    content: '×';
+    font-size: 18px;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.toast.success .toast-icon::before {
+    content: '×';
+    font-size: 18px;
+    font-weight: bold;
+    line-height: 1;
+    transform: rotate(45deg);
+}
+
+/* Toast Progress Bar */
+.toast-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 0 0 8px 8px;
+    transition: width 0.1s linear;
+}
+
+.toast.error .toast-progress {
+    background: rgba(255, 255, 255, 0.9);
+}
+
+.toast.success .toast-progress {
+    background: rgba(255, 255, 255, 0.9);
+}
+
+/* Toast Container Animation */
+@keyframes toastSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) scale(1);
+    }
+}
+
+@keyframes toastSlideOut {
+    from {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px) scale(0.95);
+    }
+}
