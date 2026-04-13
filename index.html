@@ -1,0 +1,1922 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>P2P Trading Platform</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap');
+        
+        :root { --okx-black: #000000; --okx-gray: #f5f5f5; }
+        body { font-family: 'IBM Plex Sans Arabic', sans-serif; background-color: #fff; margin: 0; padding: 0; font-size: 14px; }
+        
+        /* Navigation & Tabs */
+        .page { display: none; padding-bottom: 90px; }
+        .page-active { display: block; }
+        .nav-item { color: #9ca3af; transition: all 0.3s; }
+        .nav-item.active { color: #000; font-weight: bold; }
+        .nav-indicator { position: absolute; bottom: 5px; height: 45px; background: #f3f4f6; border-radius: 12px; transition: all 0.3s ease; z-index: -1; width: 22%; }
+        
+        .tab-active { border-bottom: 3px solid #000; color: #000 !important; font-weight: bold; }
+        .price-font { font-family: 'Inter', sans-serif; }
+
+        /* Water Ripple Effect */
+        .ripple-button {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.6);
+            transform: scale(0);
+            animation: ripple-animation 0.6s ease-out;
+            pointer-events: none;
+        }
+        
+        @keyframes ripple-animation {
+            from {
+                transform: scale(0);
+                opacity: 1;
+            }
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+
+        /* Chat Overlay */
+        #chatOverlay { position: fixed; inset: 0; background: #fff; z-index: 9999; display: none; flex-direction: column; }
+        
+        /* UI Elements */
+        .card-shadow { box-shadow: 0 2px 12px rgba(0,0,0,0.05); }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    </style>
+</head>
+<body>
+
+<div id="main-app">
+    <header class="flex justify-between items-center px-4 py-3 border-b sticky top-0 bg-white z-50">
+        <!-- Left Section -->
+        <div class="flex items-center gap-4">
+            <span class="text-2xl font-black tracking-tighter">P2P</span>
+            <div id="walletIndicator" onclick="connectTronLink()" class="text-[10px] bg-red-50 text-red-600 px-3 py-1 rounded-full font-bold cursor-pointer border border-red-100">
+                <i class="fa-solid fa-link-slash ml-1"></i> ربط المحفظة
+            </div>
+        </div>
+        
+        <!-- Right Section - Calculator Icon Only -->
+        <div class="flex items-center gap-4">
+            <svg class="w-5 h-5 text-gray-500 cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+            </svg>
+        </div>
+    </header>
+    
+    <div id="p2pPage" class="page page-active">
+        <!-- Row 1: Trading & Currency - RTL Layout -->
+        <div class="flex items-center justify-between px-4 py-4">
+            <!-- Right Side - Buy/Sell Tabs -->
+            <div class="flex" style="flex-direction: row-reverse !important;">
+                <button onclick="switchMarket('sell', this)" class="tab-active ripple-button py-4 px-4 text-black text-lg font-semibold" data-color="red">بيع</button>
+                <button onclick="switchMarket('buy', this)" class="ripple-button py-4 px-4 text-black text-lg font-semibold" data-color="green">شراء</button>
+            </div>
+            
+            <!-- Left Side - EGP Selector -->
+            <div class="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2">
+                <span class="text-sm font-medium text-gray-700">EGP</span>
+                <svg class="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+            </div>
+        </div>
+        
+        <!-- Row 2: Filtering & Selectors - RTL Layout -->
+        <div class="flex items-center justify-between px-4 py-3">
+            <!-- Far Right - USDT Selector -->
+            <div class="flex items-center gap-1 border border-gray-200 rounded-lg px-2 py-1.5">
+                <div class="w-3 h-3 bg-green-500 rounded-full flex items-center justify-center">
+                    <span class="text-white text-[6px] font-bold">T</span>
+                </div>
+                <span class="text-xs font-medium text-gray-700">USDT</span>
+                <svg class="w-2.5 h-2.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+            </div>
+            
+            <!-- Next to USDT - Amount -->
+            <div class="flex items-center gap-1">
+                <span class="text-xs text-gray-600">المبلغ</span>
+                <svg class="w-2.5 h-2.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+            </div>
+            
+            <!-- Next to Amount - Payment Methods -->
+            <div class="flex items-center gap-1">
+                <span class="text-xs text-gray-600">طرق الدفع</span>
+                <svg class="w-2.5 h-2.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+            </div>
+            
+            <!-- Far Left - Filter Icon -->
+            <div class="flex items-center gap-1">
+                <svg class="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                </svg>
+                <span class="text-xs text-gray-600">فلترة</span>
+            </div>
+        </div>
+        
+        <div id="marketList" class="p-4 space-y-6">
+            </div>
+    </div>
+
+    <div id="ordersPage" class="page">
+        <div class="flex border-b text-center">
+            <button onclick="filterOrders('pending', this)" class="flex-1 py-4 text-sm font-bold tab-active">قيد التنفيذ</button>
+            <button onclick="filterOrders('completed', this)" class="flex-1 py-4 text-sm text-gray-400">مكتمل</button>
+            <button onclick="filterOrders('cancelled', this)" class="flex-1 py-4 text-sm text-gray-400">ملغي</button>
+        </div>
+        <div id="ordersList" class="p-4 space-y-4"></div>
+    </div>
+
+    <div id="adsPage" class="page">
+        <div class="flex items-center justify-between border-b px-4 py-3">
+            <div class="flex gap-6">
+                <button onclick="filterMyAds('active', this)" class="py-4 text-sm font-bold tab-active">نشط (<span id="countActive">0</span>)</button>
+                <button onclick="filterMyAds('inactive', this)" class="py-4 text-sm text-gray-400">غير نشط</button>
+            </div>
+            
+            <!-- Create Ad Button -->
+            <button onclick="showPage('createAd')" class="w-8 h-8 flex items-center justify-center hover:bg-gray-100 transition-colors">
+                <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+            </button>
+        </div>
+        <div id="myAdsList" class="p-4 space-y-4"></div>
+    </div>
+
+    <div id="createAdPage" class="page px-4">
+        <div class="flex items-center gap-4 py-4">
+            <i class="fa-solid fa-arrow-right text-lg" onclick="navigateBackToHome()"></i>
+            <h2 class="font-bold text-lg">نشر إعلان جديد</h2>
+        </div>
+        
+        <div class="bg-gray-100 p-1 rounded-2xl flex flex-row-reverse mb-6" style="flex-direction: row-reverse !important;">
+            <button id="modeBuy" onclick="setAdMode('buy')" class="flex-1 py-3 rounded-xl font-bold text-gray-400 ripple-button" data-color="green">شراء</button>
+            <button id="modeSell" onclick="setAdMode('sell')" class="flex-1 py-3 rounded-xl font-bold bg-white text-red-600 shadow-sm ripple-button" data-color="red">بيع</button>
+        </div>
+
+        <div class="space-y-4">
+            <div class="bg-gray-50 p-4 rounded-2xl">
+                <label class="text-xs text-gray-500 block mb-1">سعر الصرف (1 USDT = ? EGP)</label>
+                <input id="priceIn" type="number" placeholder="0.00" class="w-full bg-transparent text-xl font-bold outline-none price-font">
+            </div>
+            <div class="bg-gray-50 p-4 rounded-2xl">
+                <label class="text-xs text-gray-500 block mb-1">الكمية الإجمالية (USDT)</label>
+                <input id="amountIn" type="number" placeholder="0.00" class="w-full bg-transparent text-xl font-bold outline-none price-font">
+                <!-- Balance Display - Only for Sell Mode -->
+                <div id="sellModeBalance" class="mt-1 text-xs text-gray-500 font-medium" style="display: none;">
+                    <span id="sellBalanceText">Available: 0.00 USDT</span>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <div class="flex-1 bg-gray-50 p-4 rounded-2xl">
+                    <label class="text-xs text-gray-500 block mb-1">الحد الأدنى</label>
+                    <input id="minIn" type="number" placeholder="EGP" class="w-full bg-transparent font-bold outline-none">
+                </div>
+                <div class="flex-1 bg-gray-50 p-4 rounded-2xl">
+                    <label class="text-xs text-gray-500 block mb-1">الحد الأقصى</label>
+                    <input id="maxIn" type="number" placeholder="EGP" class="w-full bg-transparent font-bold outline-none">
+                </div>
+            </div>
+            <div class="bg-gray-50 p-4 rounded-2xl">
+                <label class="text-xs text-gray-500 block mb-1">طرق الدفع</label>
+                
+                <!-- Professional Dropdown Selector -->
+                <div class="relative">
+                    <div id="paymentSelector" onclick="togglePaymentDropdown()" class="flex items-center justify-between p-3 bg-white rounded-lg cursor-pointer hover:bg-gray-50 transition-colors border border-gray-200">
+                        <div class="flex items-center gap-2">
+                            <span id="selectedPaymentText" class="text-sm font-medium text-gray-700">Select payment method</span>
+                            <span id="paymentCheckmark" class="text-green-500 hidden">Checkmark</span>
+                        </div>
+                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+                    
+                    <!-- Dropdown Menu -->
+                    <div id="paymentDropdown" class="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 hidden">
+                        <div class="max-h-60 overflow-y-auto">
+                            <!-- Vodafone Cash -->
+                            <div onclick="selectPayment('Vodafone Cash')" class="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition-colors">
+                                <div class="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
+                                    <span class="text-white text-xs font-bold">V</span>
+                                </div>
+                                <span class="text-sm font-medium">Vodafone Cash</span>
+                            </div>
+                            
+                            <!-- InstaPay -->
+                            <div onclick="selectPayment('InstaPay')" class="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition-colors">
+                                <div class="w-6 h-6 bg-blue-500 rounded-lg flex items-center justify-center">
+                                    <span class="text-white text-xs font-bold">IP</span>
+                                </div>
+                                <span class="text-sm font-medium">InstaPay</span>
+                            </div>
+                            
+                            <!-- Banque Misr -->
+                            <div onclick="selectPayment('Banque Misr')" class="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition-colors">
+                                <div class="w-6 h-6 bg-green-700 rounded-lg flex items-center justify-center">
+                                    <span class="text-white text-xs font-bold">BM</span>
+                                </div>
+                                <span class="text-sm font-medium">Banque Misr</span>
+                            </div>
+                            
+                            <!-- Orange Cash -->
+                            <div onclick="selectPayment('Orange Cash')" class="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition-colors">
+                                <div class="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                                    <span class="text-white text-xs font-bold">O</span>
+                                </div>
+                                <span class="text-sm font-medium">Orange Cash</span>
+                            </div>
+                            
+                            <!-- Bank Transfer -->
+                            <div onclick="selectPayment('Bank Transfer')" class="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition-colors">
+                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                                </svg>
+                                <span class="text-sm font-medium">Bank Transfer</span>
+                            </div>
+                            
+                            <!-- Etisalat Cash -->
+                            <div onclick="selectPayment('Etisalat Cash')" class="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition-colors">
+                                <div class="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center">
+                                    <span class="text-white text-xs font-bold">E</span>
+                                </div>
+                                <span class="text-sm font-medium">Etisalat Cash</span>
+                            </div>
+                            
+                            <!-- Alex Bank -->
+                            <div onclick="selectPayment('Alex Bank')" class="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition-colors">
+                                <div class="w-6 h-6 bg-blue-700 rounded-lg flex items-center justify-center">
+                                    <span class="text-white text-xs font-bold">AB</span>
+                                </div>
+                                <span class="text-sm font-medium">Alex Bank</span>
+                            </div>
+                            
+                            <!-- CIB Bank -->
+                            <div onclick="selectPayment('CIB Bank')" class="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition-colors">
+                                <div class="w-6 h-6 bg-indigo-600 rounded-lg flex items-center justify-center">
+                                    <span class="text-white text-xs font-bold">CB</span>
+                                </div>
+                                <span class="text-sm font-medium">CIB Bank</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button id="publishButton" onclick="handlePublishAd()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold text-lg shadow-lg mt-4 transition-colors duration-300">نشر الإعلان</button>
+        </div>
+    </div>
+
+    <div id="chatOverlay">
+        <div class="flex items-center justify-between p-4 border-b">
+            <i class="fa-solid fa-xmark text-xl" onclick="closeChat()"></i>
+            <div class="text-center">
+                <div id="chatHeaderName" class="font-bold text-sm">رقم الطلب: ---</div>
+                <div id="timerDisplay" class="text-red-600 font-bold text-xs">15:00</div>
+            </div>
+            <i class="fa-solid fa-circle-info text-gray-400"></i>
+        </div>
+        <div id="chatBody" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50"></div>
+        <div class="p-4 border-t flex gap-2 items-center">
+            <input id="chatInput" type="text" placeholder="اكتب رسالتك..." class="flex-1 bg-gray-100 p-3 rounded-xl outline-none">
+            <button onclick="sendMsg()" class="w-12 h-12 bg-black text-white rounded-xl flex items-center justify-center"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <!-- OKX Style Trade Modal -->
+    <div id="tradeModalOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-[9998] hidden">
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl w-full max-w-md mx-auto shadow-2xl">
+                <!-- Professional Modal Header -->
+                <div class="flex items-center justify-between p-6 border-b">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                            <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                                <span class="text-white text-[8px] font-bold">T</span>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 id="modalTitle" class="font-bold text-xl">شراء USDT</h3>
+                            <div class="text-sm text-gray-600 font-medium">السعر الإفرادي: <span id="modalPrice" class="font-bold text-black">0.00</span> EGP</div>
+                        </div>
+                    </div>
+                    <button onclick="closeTradeModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <i class="fa-solid fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Input Tabs Section -->
+                <div class="p-6">
+                    <div class="bg-gray-100 p-1 rounded-xl flex mb-6">
+                        <button id="amountTab" onclick="switchInputTab('amount')" class="flex-1 py-3 rounded-lg font-semibold bg-white text-gray-800 transition-all">المبلغ</button>
+                        <button id="quantityTab" onclick="switchInputTab('quantity')" class="flex-1 py-3 rounded-lg font-semibold text-gray-500 transition-all">الكمية</button>
+                    </div>
+
+                    <!-- Main Input Section -->
+                    <div class="mb-6">
+                        <!-- Amount Input (shown when amount tab is active) -->
+                        <div id="amountInputSection">
+                            <div class="relative mb-3">
+                                <input id="egpAmount" type="number" placeholder="0.00" 
+                                       class="w-full bg-gray-50 p-4 rounded-xl text-2xl font-bold outline-none focus:ring-2 focus:ring-green-500 transition-all"
+                                       oninput="calculateTradeAmounts()">
+                                <button onclick="setMaxAmount()" 
+                                        class="absolute left-3 top-1/2 transform -translate-y-1/2 bg-green-600 text-white px-3 py-1 rounded-lg text-sm font-semibold hover:bg-green-700 transition-colors">
+                                    الحد الأقصى
+                                </button>
+                            </div>
+                            <div id="amountLimits" class="text-sm text-gray-500 mb-4">
+                                الحد <span id="limitRange">30,000.00 - 127,462.42</span> EGP
+                            </div>
+                            <div id="amountResult" class="text-lg text-gray-700 mb-4">
+                                ستحصل على <span id="willReceiveUSDT" class="font-bold text-green-600">0.00</span> USDT
+                            </div>
+                        </div>
+
+                        <!-- Quantity Input (shown when quantity tab is active) -->
+                        <div id="quantityInputSection" style="display: none;">
+                            <div class="relative mb-3">
+                                <input id="usdtQuantity" type="number" placeholder="0.00" 
+                                       class="w-full bg-gray-50 p-4 rounded-xl text-2xl font-bold outline-none focus:ring-2 focus:ring-green-500 transition-all"
+                                       oninput="calculateTradeAmounts()">
+                                <button onclick="setMaxQuantity()" 
+                                        class="absolute left-3 top-1/2 transform -translate-y-1/2 bg-green-600 text-white px-3 py-1 rounded-lg text-sm font-semibold hover:bg-green-700 transition-colors">
+                                    الحد الأقصى
+                                </button>
+                            </div>
+                            <div id="quantityLimits" class="text-sm text-gray-500 mb-4">
+                                الحد <span id="quantityLimitRange">100.00 - 426.21</span> USDT
+                            </div>
+                            <div id="quantityResult" class="text-lg text-gray-700 mb-4">
+                                ستحصل على <span id="willReceiveEGP" class="font-bold text-green-600">0.00</span> EGP
+                            </div>
+                        </div>
+
+                        <!-- Available Balance (for sell mode only) -->
+                        <div id="sellBalanceSection" class="bg-gray-50 p-3 rounded-xl mb-4" style="display: none;">
+                            <div class="text-sm text-gray-600">الرصيد المتوفر</div>
+                            <div class="font-bold text-lg"><span id="availableBalance">0.00</span> USDT</div>
+                        </div>
+                    </div>
+
+                    <!-- Trade Details Section -->
+                    <div class="border-t pt-6 mb-6">
+                        <h4 class="font-bold text-lg mb-4">معلومات المعلن</h4>
+                        
+                        <!-- Merchant Info -->
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                                    <i class="fa-solid fa-user text-gray-600"></i>
+                                </div>
+                                <div>
+                                    <div class="font-semibold" id="advertiserName">Merchant_****</div>
+                                    <div class="flex items-center gap-1">
+                                        <i class="fa-solid fa-check-circle text-blue-500 text-sm"></i>
+                                        <span class="text-sm text-gray-500">موثوق</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-left">
+                                <div class="text-sm text-gray-500">معدل الإنجاز</div>
+                                <div class="font-semibold">98%</div>
+                            </div>
+                        </div>
+
+                        <!-- Payment Window -->
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="text-sm text-gray-600">نافذة الدفع</div>
+                            <div class="font-semibold">15 دقيقة</div>
+                        </div>
+
+                        <!-- Payment Method -->
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="text-sm text-gray-600">طريقة الدفع</div>
+                            <div id="paymentMethodDisplay" class="font-semibold">InstaPay</div>
+                        </div>
+                    </div>
+
+                    <!-- Professional Action Button -->
+                    <button id="tradeActionButton" onclick="executeTrade()" 
+                            class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-bold text-lg transition-all duration-300 shadow-lg">
+                        اشترِ USDT بدون رسوم
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Ad Modal -->
+    <div id="editAdModal" class="fixed inset-0 bg-black bg-opacity-50 z-[9999] hidden">
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl w-full max-w-md mx-auto shadow-2xl">
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between p-6 border-b">
+                    <h3 class="font-bold text-lg">تعديل الإعلان</h3>
+                    <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fa-solid fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Edit Form -->
+                <div class="p-6 space-y-4">
+                    <div>
+                        <label class="text-sm text-gray-600 block mb-2">سعر الصرف (1 USDT = ? EGP)</label>
+                        <input id="editPrice" type="number" class="w-full bg-gray-50 p-4 rounded-xl text-lg font-bold outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="text-sm text-gray-600 block mb-2">الكمية الإجمالية (USDT)</label>
+                        <input id="editAmount" type="number" class="w-full bg-gray-50 p-4 rounded-xl text-lg font-bold outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="flex-1">
+                            <label class="text-sm text-gray-600 block mb-2">الحد الأدنى</label>
+                            <input id="editMin" type="number" class="w-full bg-gray-50 p-4 rounded-xl font-bold outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div class="flex-1">
+                            <label class="text-sm text-gray-600 block mb-2">الحد الأقصى</label>
+                            <input id="editMax" type="number" class="w-full bg-gray-50 p-4 rounded-xl font-bold outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-sm text-gray-600 block mb-2">طريقة الدفع</label>
+                        <select id="editPayMethod" class="w-full bg-gray-50 p-4 rounded-xl font-bold outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">اختر طريقة الدفع</option>
+                            <option value="Vodafone Cash">Vodafone Cash</option>
+                            <option value="InstaPay">InstaPay</option>
+                            <option value="Banque Misr">Banque Misr</option>
+                            <option value="Orange Cash">Orange Cash</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                            <option value="Etisalat Cash">Etisalat Cash</option>
+                            <option value="Alex Bank">Alex Bank</option>
+                            <option value="CIB Bank">CIB Bank</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-3 p-6 border-t">
+                    <button onclick="updateAd()" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors">
+                        <i class="fa-solid fa-save ml-2"></i> حفظ التعديلات
+                    </button>
+                    <button onclick="cancelEditAd()" class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-300 transition-colors">
+                        <i class="fa-solid fa-times ml-2"></i> إلغاء
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="fixed bottom-0 w-full bg-white border-t py-3 flex justify-around items-center z-50">
+        <div id="indicator" class="nav-indicator" style="right: 1.5%;"></div>
+        <div onclick="navTo('p2p', 0)" class="nav-item active flex flex-col items-center">
+            <i class="fa-solid fa-house-chimney text-lg"></i>
+            <span class="text-[10px] mt-1">الرئيسية</span>
+        </div>
+        <div onclick="navTo('orders', 1)" class="nav-item flex flex-col items-center">
+            <i class="fa-solid fa-file-invoice-dollar text-lg"></i>
+            <span class="text-[10px] mt-1">الطلبات</span>
+        </div>
+        <div onclick="navTo('ads', 2)" class="nav-item flex flex-col items-center">
+            <i class="fa-solid fa-bullhorn text-lg"></i>
+            <span class="text-[10px] mt-1">إعلاناتي</span>
+        </div>
+        <div onclick="navTo('profile', 3)" class="nav-item flex flex-col items-center">
+            <i class="fa-solid fa-user-gear text-lg"></i>
+            <span class="text-[10px] mt-1">حسابي</span>
+        </div>
+    </footer>
+</div>
+
+<script>
+// === DEPLOYED CONTRACT ADDRESS GOES HERE ===
+
+// --- [1. إعدادات Firebase] ---
+const firebaseConfig = {
+  apiKey: "AIzaSyClJPT4UQsy9XmV4JB34rt0rYUB-FefyXY",
+  authDomain: "mustafa-dbece.firebaseapp.com",
+  databaseURL: "https://mustafa-dbece-default-rtdb.firebaseio.com",
+  projectId: "mustafa-dbece",
+  storageBucket: "mustafa-dbece.appspot.com",
+  messagingSenderId: "692060842077",
+  appId: "1:692060842077:web:04f0598199c58d403d05b4"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const rtdb = firebase.database();
+
+// --- [2. المتغيرات العامة] ---
+let tronWeb = null;
+let currentMarketType = 'sell';
+let currentAdFilter = 'active';
+let currentOrderFilter = 'pending';
+let adFormMode = 'sell'; 
+let activeOrderId = null;
+let timerInt = null;
+const USDT_CONTRACT = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";
+// === DEPLOYED CONTRACT ADDRESS GOES HERE ===
+const ESCROW_CONTRACT = "T9yDndPqzYnv2kUaq3STyrpTrni1GU7Ctd";
+const TELEGRAM_SUPPORT_LINK = "https://t.me/TronLink_1manager";
+let notificationAudio = null;
+
+// --- [2.1. Trade Modal Variables] ---
+let currentTradeType = 'buy';
+let currentAdPrice = 0;
+let currentAdMin = 0;
+let currentAdMax = 0;
+let currentAdAvailable = 0;
+let currentAdPaymentMethod = '';
+let currentAdOwner = '';
+let tradeModalTimer = null;
+let currentInputTab = 'amount';
+let editingAdId = null;
+let userAds = [];
+
+// --- [2.2. Water Ripple Effect] ---
+function createRipple(event) {
+    const button = event.currentTarget;
+    const rect = button.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    const x = event.clientX - rect.left - size / 2;
+    const y = event.clientY - rect.top - size / 2;
+    
+    const ripple = document.createElement('span');
+    ripple.className = 'ripple';
+    ripple.style.width = ripple.style.height = size + 'px';
+    ripple.style.left = x + 'px';
+    ripple.style.top = y + 'px';
+    
+    // Get the button color from data-color attribute
+    const color = button.getAttribute('data-color');
+    if (color === 'red') {
+        ripple.style.background = 'rgba(239, 68, 68, 0.3)'; // Red with transparency
+    } else if (color === 'green') {
+        ripple.style.background = 'rgba(34, 197, 94, 0.3)'; // Green with transparency
+    } else {
+        ripple.style.background = 'rgba(255, 255, 255, 0.6)'; // Default white
+    }
+    
+    button.appendChild(ripple);
+    
+    setTimeout(() => {
+        ripple.remove();
+    }, 600);
+}
+
+// Initialize ripple effects for Buy/Sell buttons
+document.addEventListener('DOMContentLoaded', function() {
+    const rippleButtons = document.querySelectorAll('.ripple-button');
+    rippleButtons.forEach(button => {
+        button.addEventListener('click', createRipple);
+    });
+});
+
+// Also initialize ripple effects dynamically when new elements are added
+function initializeRippleEffects() {
+    const rippleButtons = document.querySelectorAll('.ripple-button:not([data-ripple-initialized])');
+    rippleButtons.forEach(button => {
+        button.addEventListener('click', createRipple);
+        button.setAttribute('data-ripple-initialized', 'true');
+    });
+}
+
+// --- [3. التحكم في التنقل] ---
+function navTo(page, index) {
+    const positions = ['1.5%', '26.5%', '51.5%', '76.5%'];
+    document.getElementById('indicator').style.right = positions[index];
+    
+    // Remove active class from ALL nav items first
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    
+    // Apply active class ONLY to the currently selected item
+    const navItems = document.querySelectorAll('.nav-item');
+    if (navItems[index]) {
+        navItems[index].classList.add('active');
+    }
+    
+    showPage(page);
+}
+
+function showPage(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('page-active'));
+    const target = document.getElementById(id + 'Page');
+    if(target) target.classList.add('page-active');
+    
+    // Show/hide P2P-specific header elements
+    const headerRightSection = document.querySelector('header > div:last-child');
+    
+    if(id === 'p2p') {
+        headerRightSection.style.display = 'flex';
+        renderMarket();
+    } else {
+        headerRightSection.style.display = 'none';
+        if(id === 'orders') renderOrders();
+        if(id === 'ads') renderMyAds();
+    }
+}
+
+function navigateBackToHome() {
+    navTo('p2p', 0);
+}
+
+// --- [4. محفظة ترون لينك] ---
+async function connectTronLink() {
+    if (window.tronLink) {
+        try {
+            await window.tronLink.request({ method: "tron_requestAccounts" });
+            tronWeb = window.tronLink.tronWeb;
+            const addr = tronWeb.defaultAddress.base58;
+            document.getElementById('walletIndicator').innerHTML = `<i class="fa-solid fa-circle-check ml-1"></i> ${addr.slice(0,4)}...${addr.slice(-4)}`;
+            document.getElementById('walletIndicator').className = "text-[10px] bg-green-50 text-green-600 px-3 py-1 rounded-full font-bold border border-green-100";
+            
+            // Initialize notification audio
+            notificationAudio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT');
+            
+            // Update header balance display
+            updateHeaderBalance();
+            
+            renderMarket();
+        } catch(e) { console.error("Connection failed", e); Swal.fire("فشل الاتصال بالمحفظة"); }
+    } else {
+        Swal.fire("يرجى تثبيت محفظة TronLink");
+    }
+}
+
+// --- [4.1. Web3 Escrow Functions] ---
+async function lockUSDT(amount, orderId) {
+    try {
+        if (!tronWeb) throw new Error('Wallet not connected');
+        
+        const usdtContract = await tronWeb.contract().at(USDT_CONTRACT);
+        const balance = await usdtContract.balanceOf(tronWeb.defaultAddress.base58).call();
+        
+        if ((balance / 1e6) < amount) {
+            throw new Error('Insufficient USDT balance');
+        }
+        
+        // Approve escrow contract to spend USDT
+        const approveTx = await usdtContract.approve(ESCROW_CONTRACT, tronWeb.toSun(amount * 1e6)).send({
+            feeLimit: 100000000,
+            callValue: 0,
+            shouldPollResponse: true
+        });
+        
+        // Lock USDT in escrow
+        const escrowContract = await tronWeb.contract().at(ESCROW_CONTRACT);
+        const lockTx = await escrowContract.lock(orderId, tronWeb.toSun(amount * 1e6)).send({
+            feeLimit: 100000000,
+            callValue: 0,
+            shouldPollResponse: true
+        });
+        
+        return { success: true, approveTx, lockTx };
+    } catch (error) {
+        console.error('Lock USDT error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+async function releaseUSDT(orderId) {
+    try {
+        if (!tronWeb) throw new Error('Wallet not connected');
+        
+        const escrowContract = await tronWeb.contract().at(ESCROW_CONTRACT);
+        const releaseTx = await escrowContract.release(orderId).send({
+            feeLimit: 100000000,
+            callValue: 0,
+            shouldPollResponse: true
+        });
+        
+        return { success: true, releaseTx };
+    } catch (error) {
+        console.error('Release USDT error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+async function checkUSDTBalance(address) {
+    try {
+        if (!tronWeb) return 0;
+        const contract = await tronWeb.contract().at(USDT_CONTRACT);
+        const balance = await contract.balanceOf(address).call();
+        return balance / 1e6;
+    } catch (error) {
+        console.error('Balance check error:', error);
+        return 0;
+    }
+}
+
+// --- [3.1. Trade Modal Functions] ---
+function clearModalData() {
+    // Clear all input fields
+    document.getElementById('egpAmount').value = '';
+    document.getElementById('usdtAmount').value = '';
+    
+    // Clear any error messages
+    const errorElements = document.querySelectorAll('.text-red-500');
+    errorElements.forEach(el => el.textContent = '');
+    
+    // Reset tab to amount tab
+    const amountTab = document.getElementById('amountTab');
+    const cryptoTab = document.getElementById('cryptoTab');
+    if (amountTab && cryptoTab) {
+        amountTab.classList.add('border-b-2', 'border-blue-500', 'text-blue-600');
+        amountTab.classList.remove('text-gray-500');
+        cryptoTab.classList.remove('border-b-2', 'border-blue-500', 'text-blue-600');
+        cryptoTab.classList.add('text-gray-500');
+    }
+}
+
+function openTradeModal(docId) {
+    console.log('Opening Modal for:', docId); // To verify in console
+    
+    // Get the ad data directly from Firestore
+    db.collection("ads").doc(docId).get().then(doc => {
+        if (!doc.exists) {
+            console.error('Ad not found:', docId);
+            return;
+        }
+        
+        const adData = doc.data();
+        currentTradeType = adData.type;
+        currentAdPrice = parseFloat(adData.price);
+        currentAdMin = parseFloat(adData.min);
+        currentAdMax = parseFloat(adData.max);
+        currentAdAvailable = parseFloat(adData.amount);
+        currentAdPaymentMethod = adData.payMethod;
+        currentAdOwner = adData.owner;
+        
+        // Update modal content
+        document.getElementById('modalTitle').textContent = currentTradeType === 'buy' ? 'SELL USDT' : 'BUY USDT';
+        document.getElementById('modalPrice').textContent = currentAdPrice.toFixed(2);
+        document.getElementById('advertiserName').textContent = `Merchant_${currentAdOwner.slice(-4)}`;
+        document.getElementById('paymentMethodDisplay').textContent = currentAdPaymentMethod;
+        
+        // Update limits display
+        const minInEGP = currentAdMin;
+        const maxInEGP = currentAdMax;
+        const minInUSDT = (currentAdMin / currentAdPrice).toFixed(2);
+        const maxInUSDT = (currentAdMax / currentAdPrice).toFixed(2);
+        
+        document.getElementById('limitRange').textContent = `${minInEGP.toFixed(2)} - ${maxInEGP.toFixed(2)}`;
+        document.getElementById('quantityLimitRange').textContent = `${minInUSDT} - ${maxInUSDT}`;
+        
+        // Update action button
+        const actionBtn = document.getElementById('tradeActionButton');
+        actionBtn.textContent = currentTradeType === 'buy' ? 'ASHTR\' USDT WITHOUT FEES' : 'SELL USDT WITHOUT FEES';
+        actionBtn.className = currentTradeType === 'buy' ? 
+            'w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-bold text-lg transition-all duration-300 shadow-lg' :
+            'w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-xl font-bold text-lg transition-all duration-300 shadow-lg';
+        
+        // Show/hide balance section for sell mode
+        const balanceSection = document.getElementById('sellBalanceSection');
+        if (currentTradeType === 'sell') {
+            balanceSection.style.display = 'block';
+            if (tronWeb) {
+                checkUSDTBalance(tronWeb.defaultAddress.base58).then(balance => {
+                    document.getElementById('availableBalance').textContent = balance.toFixed(2);
+                }).catch(error => {
+                    console.error('Error checking balance:', error);
+                    document.getElementById('availableBalance').textContent = '0.00';
+                });
+            }
+        } else {
+            balanceSection.style.display = 'none';
+        }
+        
+        // Show modal
+        document.getElementById('tradeModalOverlay').classList.remove('hidden');
+        
+        // Reset inputs and switch to amount tab
+        document.getElementById('egpAmount').value = '';
+        document.getElementById('usdtQuantity').value = '';
+        document.getElementById('willReceiveUSDT').textContent = '0.00';
+        document.getElementById('willReceiveEGP').textContent = '0.00';
+        switchInputTab('amount');
+    }).catch(error => {
+        console.error('Error fetching ad data:', error);
+    });
+}
+
+function closeTradeModal() {
+    document.getElementById('tradeModalOverlay').classList.add('hidden');
+    if (tradeModalTimer) {
+        clearInterval(tradeModalTimer);
+        tradeModalTimer = null;
+    }
+}
+
+function switchInputTab(tab) {
+    currentInputTab = tab;
+    const amountTab = document.getElementById('amountTab');
+    const quantityTab = document.getElementById('quantityTab');
+    const amountSection = document.getElementById('amountInputSection');
+    const quantitySection = document.getElementById('quantityInputSection');
+    
+    if (tab === 'amount') {
+        // Update tab styling
+        amountTab.className = 'flex-1 py-3 rounded-lg font-semibold bg-white text-gray-800 transition-all';
+        quantityTab.className = 'flex-1 py-3 rounded-lg font-semibold text-gray-500 transition-all';
+        
+        // Show/hide sections
+        amountSection.style.display = 'block';
+        quantitySection.style.display = 'none';
+    } else {
+        // Update tab styling
+        quantityTab.className = 'flex-1 py-3 rounded-lg font-semibold bg-white text-gray-800 transition-all';
+        amountTab.className = 'flex-1 py-3 rounded-lg font-semibold text-gray-500 transition-all';
+        
+        // Show/hide sections
+        quantitySection.style.display = 'block';
+        amountSection.style.display = 'none';
+    }
+    
+    // Trigger validation on tab switch
+    validateTradeInput();
+}
+
+function calculateTradeAmounts() {
+    const egpInput = document.getElementById('egpAmount');
+    const usdtInput = document.getElementById('usdtQuantity');
+    
+    if (currentInputTab === 'amount') {
+        // EGP to USDT calculation
+        const egpAmount = parseFloat(egpInput.value) || 0;
+        const usdtQuantity = egpAmount / currentAdPrice;
+        usdtInput.value = usdtQuantity.toFixed(2);
+        
+        // Update "will receive" display
+        document.getElementById('willReceiveUSDT').textContent = usdtQuantity.toFixed(2);
+    } else {
+        // USDT to EGP calculation
+        const usdtQuantity = parseFloat(usdtInput.value) || 0;
+        const egpAmount = usdtQuantity * currentAdPrice;
+        egpInput.value = egpAmount.toFixed(2);
+        
+        // Update "will receive" display
+        document.getElementById('willReceiveEGP').textContent = egpAmount.toFixed(2);
+    }
+    
+    // Validate input and update button state
+    validateTradeInput();
+}
+
+function setMaxAmount() {
+    if (currentInputTab === 'amount') {
+        const maxEGP = currentAdMax;
+        document.getElementById('egpAmount').value = maxEGP.toFixed(2);
+    } else {
+        const maxUSDT = Math.min(currentAdAvailable, currentAdMax / currentAdPrice);
+        document.getElementById('usdtQuantity').value = maxUSDT.toFixed(2);
+    }
+    calculateTradeAmounts();
+}
+
+function setMaxQuantity() {
+    const maxUSDT = Math.min(currentAdAvailable, currentAdMax / currentAdPrice);
+    document.getElementById('usdtQuantity').value = maxUSDT.toFixed(2);
+    calculateTradeAmounts();
+}
+
+function validateTradeInput() {
+    const egpInput = document.getElementById('egpAmount');
+    const usdtInput = document.getElementById('usdtQuantity');
+    const actionBtn = document.getElementById('tradeActionButton');
+    
+    const egpAmount = parseFloat(egpInput.value) || 0;
+    const usdtQuantity = parseFloat(usdtInput.value) || 0;
+    
+    let isValid = true;
+    let errorMessage = '';
+    
+    // Check if amounts are positive
+    if (egpAmount <= 0 || usdtQuantity <= 0) {
+        isValid = false;
+        errorMessage = 'يجب إدخال قيمة موجبة';
+    }
+    
+    // Check limits
+    if (egpAmount < currentAdMin || egpAmount > currentAdMax) {
+        isValid = false;
+        errorMessage = `المبلغ يجب أن يكون بين ${currentAdMin.toFixed(2)} و ${currentAdMax.toFixed(2)} EGP`;
+    }
+    
+    // Check available balance for sell
+    if (currentTradeType === 'sell' && usdtQuantity > currentAdAvailable) {
+        isValid = false;
+        errorMessage = `الكمية المتاحة: ${currentAdAvailable.toFixed(2)} USDT`;
+    }
+    
+    // Update input styling based on validation
+    if (currentInputTab === 'amount') {
+        egpInput.className = isValid ? 
+            'w-full bg-gray-50 p-4 rounded-xl text-2xl font-bold outline-none focus:ring-2 focus:ring-green-500 transition-all' :
+            'w-full bg-red-50 p-4 rounded-xl text-2xl font-bold outline-none focus:ring-2 focus:ring-red-500 transition-all border border-red-300';
+    } else {
+        usdtInput.className = isValid ? 
+            'w-full bg-gray-50 p-4 rounded-xl text-2xl font-bold outline-none focus:ring-2 focus:ring-green-500 transition-all' :
+            'w-full bg-red-50 p-4 rounded-xl text-2xl font-bold outline-none focus:ring-2 focus:ring-red-500 transition-all border border-red-300';
+    }
+    
+    // Update button state
+    actionBtn.disabled = !isValid;
+    actionBtn.className = isValid ? 
+        (currentTradeType === 'buy' ? 
+            'w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-bold text-lg transition-all duration-300 shadow-lg' :
+            'w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-xl font-bold text-lg transition-all duration-300 shadow-lg') :
+        'w-full bg-gray-400 text-white py-4 rounded-xl font-bold text-lg cursor-not-allowed transition-all duration-300';
+    
+    return { isValid, errorMessage };
+}
+
+function startTradeModalTimer() {
+    let timeLeft = 15 * 60; // 15 minutes in seconds
+    
+    tradeModalTimer = setInterval(() => {
+        timeLeft--;
+        
+        if (timeLeft <= 0) {
+            clearInterval(tradeModalTimer);
+            closeTradeModal();
+            Swal.fire('انتهى وقت التداول', 'يرجى المحاولة مرة أخرى', 'warning');
+        }
+    }, 1000);
+}
+
+async function executeTrade() {
+    if (!tronWeb) {
+        return Swal.fire('خطأ', 'يرجى ربط المحفظة أولاً', 'error');
+    }
+    
+    const egpAmount = parseFloat(document.getElementById('egpAmount').value) || 0;
+    const usdtQuantity = parseFloat(document.getElementById('usdtQuantity').value) || 0;
+    
+    // Use validation function
+    const validation = validateTradeInput();
+    if (!validation.isValid) {
+        return Swal.fire('خطأ في الإدخال', validation.errorMessage, 'error');
+    }
+    
+    // Balance validation for selling
+    if (currentTradeType === 'sell') {
+        const userBalance = await checkUSDTBalance(tronWeb.defaultAddress.base58);
+        if (userBalance < usdtQuantity) {
+            return Swal.fire('رصيد غير كافٍ', `رصيدك: ${userBalance.toFixed(2)} USDT`, 'error');
+        }
+    }
+    
+    try {
+        // Create order with proper data types
+        const orderData = {
+            adId: 'temp-ad-id',
+            adOwner: currentAdOwner,
+            taker: tronWeb.defaultAddress.base58,
+            type: currentTradeType,
+            status: 'pending',
+            isPaid: false,
+            createdAt: Number(Date.now()),
+            amount: String(usdtQuantity),
+            price: String(currentAdPrice),
+            paymentMethod: currentAdPaymentMethod,
+            egpAmount: String(egpAmount)
+        };
+        
+        await db.collection("orders").add(orderData);
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'تم إنشاء الطلب',
+            text: `طلب ${currentTradeType === 'buy' ? 'الشراء' : 'البيع'} بنجاح`,
+            showConfirmButton: false,
+            timer: 2000
+        });
+        
+        closeTradeModal();
+        
+    } catch (error) {
+        console.error('Trade execution error:', error);
+        Swal.fire('خطأ', 'فشل تنفيذ التداول: ' + error.message, 'error');
+    }
+}
+
+// --- [3.2. Edit Modal Functions] ---
+function openEditModal(adData) {
+    editingAdId = adData.id;
+    
+    // Populate edit form
+    document.getElementById('editPrice').value = adData.price;
+    document.getElementById('editAmount').value = adData.amount;
+    document.getElementById('editMin').value = adData.min;
+    document.getElementById('editMax').value = adData.max;
+    document.getElementById('editPayMethod').value = adData.payMethod;
+    
+    // Show modal
+    document.getElementById('editAdModal').classList.remove('hidden');
+}
+
+function closeEditModal() {
+    document.getElementById('editAdModal').classList.add('hidden');
+    editingAdId = null;
+}
+
+async function updateAd() {
+    console.log('updateAd called, editingAdId:', editingAdId);
+    
+    if (!editingAdId) {
+        console.error('No editingAdId set');
+        return Swal.fire('Error', 'No ad selected for editing', 'error');
+    }
+    
+    if (!tronWeb) {
+        console.error('Wallet not connected');
+        return Swal.fire('Error', 'Wallet not connected', 'error');
+    }
+    
+    try {
+        // Collect the NEW values from the modal
+        const newPrice = document.getElementById('editPrice').value.trim();
+        const newAmount = document.getElementById('editAmount').value.trim();
+        const newMin = document.getElementById('editMin').value.trim();
+        const newMax = document.getElementById('editMax').value.trim();
+        const newPayMethod = document.getElementById('editPayMethod').value.trim();
+        
+        console.log('New values collected:', { newPrice, newAmount, newMin, newMax, newPayMethod });
+        
+        // Enhanced Validation - Sync with publish validation
+        if (!newPrice || !newAmount || !newMin || !newMax || !newPayMethod) {
+            return Swal.fire('Error', 'Please fill all fields', 'error');
+        }
+        
+        if (parseFloat(newAmount) <= 0) {
+            return Swal.fire('Error', 'Quantity must be greater than 0', 'error');
+        }
+        
+        if (parseFloat(newMin) > parseFloat(newMax)) {
+            return Swal.fire('Error', 'Minimum cannot be greater than maximum', 'error');
+        }
+        
+        // Price calculation validation - Maximum Limit based on Quantity * Exchange Price
+        const maxLimitValue = parseFloat(newMax);
+        const totalValue = parseFloat(newAmount) * parseFloat(newPrice);
+        if(maxLimitValue > totalValue) {
+            return Swal.fire('Error', `Maximum limit (${newMax} EGP) cannot exceed total ad value (${totalValue.toFixed(2)} EGP)`, 'error');
+        }
+        
+        // Use the Firebase update command directly to the path ads/ + currentEditingId
+        console.log('Updating Firebase path: ads/' + editingAdId);
+        
+        await db.collection("ads").doc(editingAdId).update({
+            price: String(newPrice),
+            amount: String(newAmount),
+            min: String(newMin),
+            max: String(newMax),
+            payMethod: String(newPayMethod),
+            status: 'active',
+            updatedAt: Number(Date.now())
+        });
+        
+        console.log('Firebase update successful');
+        
+        // Close modal and show success
+        closeEditModal();
+        Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: 'Ad updated successfully',
+            showConfirmButton: false,
+            timer: 1500
+        });
+        
+        // Refresh the ads
+        if (document.getElementById('adsPage').classList.contains('page-active')) {
+            renderMyAds();
+        }
+        if (document.getElementById('p2pPage').classList.contains('page-active')) {
+            renderMarket();
+        }
+        
+    } catch (error) {
+        console.error('Firebase update error:', error);
+        
+        // Alert for specific errors
+        if (error.message.includes('Permission denied')) {
+            Swal.fire('Permission Denied', 'You do not have permission to edit this ad', 'error');
+        } else if (error.message.includes('null')) {
+            Swal.fire('Null Error', 'A required field is null or missing', 'error');
+        } else {
+            Swal.fire('Update Error', 'Failed to update ad: ' + error.message, 'error');
+        }
+    }
+}
+
+function editAd(adId) {
+    console.log('Editing Ad:', adId);
+    
+    // Find the ad data from userAds array
+    const ad = userAds.find(a => a.id === adId);
+    
+    if (!ad) {
+        console.error('Ad not found:', adId);
+        Swal.fire('Error', 'Ad not found', 'error');
+        return;
+    }
+    
+    console.log('Found ad data:', ad);
+    
+    // Manually set the .value for all inputs in the edit modal
+    document.getElementById('editPrice').value = ad.price || '';
+    document.getElementById('editAmount').value = ad.amount || '';
+    document.getElementById('editMin').value = ad.min || '';
+    document.getElementById('editMax').value = ad.max || '';
+    document.getElementById('editPayMethod').value = ad.payMethod || '';
+    
+    // Set the current editing ID
+    editingAdId = adId;
+    
+    console.log('Modal fields populated, opening modal');
+    
+    // Open the modal using the correct ID
+    document.getElementById('editAdModal').classList.remove('hidden');
+}
+
+function cancelEditAd() {
+    closeEditModal();
+}
+
+function confirmCancelAd(adId) {
+    Swal.fire({
+        title: 'تأكيد الإلغاء',
+        text: 'هل أنت متأكد من إلغاء هذا الإعلان؟ لا يمكن التراجع عن هذا الإجراء.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'نعم، إلغاء',
+        cancelButtonText: 'لا',
+        confirmButtonColor: '#ef4444'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            try {
+                await db.collection("ads").doc(adId).delete();
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'تم الإلغاء',
+                    text: 'تم حذف الإعلان بنجاح',
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+                
+            } catch (error) {
+                console.error('Cancel ad error:', error);
+                Swal.fire('خطأ', 'فشل حذف الإعلان: ' + error.message, 'error');
+            }
+        }
+    });
+}
+
+// Update balance display function
+function updateHeaderBalance() {
+    if (tronWeb) {
+        const balance = checkUSDTBalance(tronWeb.defaultAddress.base58);
+        const balanceElement = document.getElementById('headerBalance');
+        if (balanceElement) {
+            balanceElement.textContent = balance.toFixed(2);
+        }
+    }
+}
+
+// Add input event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    const egpInput = document.getElementById('egpAmount');
+    const usdtInput = document.getElementById('usdtQuantity');
+    
+    if (egpInput) {
+        egpInput.addEventListener('input', calculateTradeAmounts);
+    }
+    if (usdtInput) {
+        usdtInput.addEventListener('input', calculateTradeAmounts);
+    }
+    
+    // Update balance on load and wallet connection
+    updateHeaderBalance();
+});
+
+// --- [5. منطق الإعلانات والسوق] ---
+function switchMarket(type, btn) {
+    currentMarketType = type;
+    document.querySelectorAll('#p2pPage .tab-active').forEach(b => b.classList.remove('tab-active'));
+    btn.classList.add('tab-active');
+    renderMarket();
+}
+
+function renderMarket() {
+    const container = document.getElementById('marketList');
+    db.collection("ads").where("status", "==", "active").where("type", "==", currentMarketType).onSnapshot(snap => {
+        if(snap.empty) { container.innerHTML = "<div class='text-center py-20 text-gray-400'><i class='fa-solid fa-box-open text-4xl mb-2'></i><p>لا توجد إعلانات حالياً</p></div>"; return; }
+        
+        // Ghost ads protection - only show ads with valid data
+        const validAds = snap.docs.filter(doc => {
+            const data = doc.data();
+            return data.price && data.amount && data.payMethod && data.min && data.max;
+        });
+        
+        if(validAds.length === 0) { 
+            container.innerHTML = "<div class='text-center py-20 text-gray-400'><i class='fa-solid fa-box-open text-4xl mb-2'></i><p>لا توجد إعلانات حالياً</p></div>"; 
+            return; 
+        }
+        
+        container.innerHTML = validAds.map(doc => {
+            const data = doc.data();
+            const colorClass = currentMarketType === 'buy' ? 'bg-green-600' : 'bg-red-600';
+            return `
+            <div class="border-b pb-5 animate-pulse-once">
+                <div class="flex justify-between items-center mb-2">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center font-bold text-xs">M</div>
+                        <span class="font-bold text-sm text-gray-800">Merchant_${data.owner.slice(-4)}</span>
+                        <i class="fa-solid fa-certificate text-blue-500 text-[10px]"></i>
+                    </div>
+                </div>
+                <div class="flex justify-between items-end">
+                    <div>
+                        <div class="text-2xl font-black price-font">${data.price} <span class="text-xs font-normal text-gray-500">EGP</span></div>
+                        <div class="text-[11px] text-gray-500 mt-1">الكمية المتاحة: <span class="text-black font-semibold">${data.amount} USDT</span></div>
+                        <div class="text-[11px] text-gray-500">الحدود: <span class="text-black font-semibold">${data.min} - ${data.max} EGP</span></div>
+                        <div class="mt-2 inline-flex items-center gap-1 bg-zinc-100 px-2 py-0.5 rounded text-[10px] font-bold text-zinc-600">
+                             <i class="fa-solid fa-wallet text-[9px]"></i> ${data.payMethod}
+                        </div>
+                    </div>
+                    <button onclick="openTradeModal('${doc.id}')" class="${colorClass} text-white px-7 py-2.5 rounded-xl font-bold text-sm shadow-sm transition-transform active:scale-95">
+                        ${currentMarketType === 'buy' ? 'شراء' : 'بيع'}
+                    </button>
+                </div>
+            </div>`;
+        }).join('');
+    });
+}
+
+// --- [6. نشر الإعلان والتحقق من الأمان] ---
+function setAdMode(mode) {
+    adFormMode = mode;
+    const b = document.getElementById('modeBuy'), s = document.getElementById('modeSell');
+    const balanceDiv = document.getElementById('sellModeBalance');
+    const publishButton = document.getElementById('publishButton');
+    
+    if(mode === 'buy') {
+        // Buy mode - Red active state (left side)
+        b.className = "flex-1 py-3 rounded-xl font-bold bg-white text-red-600 shadow-sm";
+        s.className = "flex-1 py-3 rounded-xl font-bold text-gray-400";
+        // Show balance for Buy mode
+        balanceDiv.classList.remove('hidden');
+        balanceDiv.style.display = 'block';
+        updateSellBalance();
+        // Red button for Buy mode
+        publishButton.className = "w-full bg-red-600 text-white py-4 rounded-2xl font-bold text-lg shadow-lg mt-4 transition-colors duration-300";
+    } else {
+        // Sell mode - Green active state (right side)
+        s.className = "flex-1 py-3 rounded-xl font-bold bg-white text-green-600 shadow-sm";
+        b.className = "flex-1 py-3 rounded-xl font-bold text-gray-400";
+        // Hide balance completely for Sell mode
+        balanceDiv.classList.add('hidden');
+        balanceDiv.style.display = 'none';
+        // Green button for Sell mode
+        publishButton.className = "w-full bg-green-600 text-white py-4 rounded-2xl font-bold text-lg shadow-lg mt-4 transition-colors duration-300";
+    }
+}
+
+async function updateSellBalance() {
+    if(tronWeb) {
+        try {
+            const balance = await checkUSDTBalance(tronWeb.defaultAddress.base58);
+            document.getElementById('sellBalanceText').textContent = `Available: ${balance.toFixed(2)} USDT`;
+        } catch(e) {
+            document.getElementById('sellBalanceText').textContent = 'Available: 0.00 USDT';
+        }
+    }
+}
+
+async function handlePublishAd() {
+    if(!tronWeb) return Swal.fire("اربط محفظتك أولاً");
+    
+    // Anti-double click protection
+    const publishBtn = event.target;
+    if(publishBtn.disabled) return;
+    publishBtn.disabled = true;
+    publishBtn.textContent = 'جاري النشر...';
+    
+    try {
+        // Get form elements with null checks
+        const priceIn = document.getElementById('priceIn');
+        const amountIn = document.getElementById('amountIn');
+        const minIn = document.getElementById('minIn');
+        const maxIn = document.getElementById('maxIn');
+        
+        // Validate elements exist
+        if (!priceIn || !amountIn || !minIn || !maxIn) {
+            throw new Error('Form elements not found');
+        }
+        
+        const price = priceIn.value.trim();
+        const amount = amountIn.value.trim();
+        const min = minIn.value.trim();
+        const max = maxIn.value.trim();
+        
+        // Get selected payment from dropdown using safe check
+        const selectedPaymentText = document.getElementById('selectedPaymentText');
+        const paymentMethod = selectedPaymentText ? selectedPaymentText.textContent : '';
+        const myAddr = tronWeb ? tronWeb.defaultAddress.base58 : null;
+        
+        if (!myAddr) {
+            throw new Error('Wallet not connected');
+        }
+
+        // Enhanced form validation
+        if(!price) {
+            throw new Error('يرجى إدخال سعر الصرف');
+        }
+        if(!amount || parseFloat(amount) <= 0) {
+            throw new Error('يرجى إدخال كمية صحيحة أكبر من 0');
+        }
+        if(!min || parseFloat(min) <= 0) {
+            throw new Error('يرجى إدخال الحد الأدنى صحيح أكبر من 0');
+        }
+        if(!max || parseFloat(max) <= 0) {
+            throw new Error('يرجى إدخال الحد الأقصى صحيح أكبر من 0');
+        }
+        if(parseFloat(min) > parseFloat(max)) {
+            throw new Error('الحد الأدنى لا يمكن أن يكون أكبر من الحد الأقصى');
+        }
+        
+        // Price calculation validation - Maximum Limit based on Quantity * Exchange Price
+        const maxLimitValue = parseFloat(max);
+        const totalValue = parseFloat(amount) * parseFloat(price);
+        if(maxLimitValue > totalValue) {
+            throw new Error(`الحد الأقصى (${max} EGP) يتجاوز القيمة الإجمالية للكمية (${totalValue.toFixed(2)} EGP). يرجى تصحيح الحد الأقصى.`);
+        }
+        if(!paymentMethod || paymentMethod === 'Select payment method' || paymentMethod.trim() === '') {
+            throw new Error('يرجى اختيار طريقة دفع - هذا حقل إلزامي');
+        }
+
+        // [Security Operations]: Merchant publishes sell ad (green) -> must check balance and reserve coins
+        if(adFormMode === 'buy') {
+            try {
+                const balance = await checkUSDTBalance(myAddr);
+                if(balance < parseFloat(amount)) {
+                    throw new Error("عذراً، رصيدك في المحفظة أقل من الكمية المحددة للإعلان.");
+                }
+                
+                const result = await Swal.fire({
+                    title: 'حجز العملات',
+                    text: `سيتم حجز ${amount} USDT في العقد الذكي`,
+                    icon: 'info',
+                    showCancelButton: true,
+                    confirmButtonText: 'تأكيد الحجز'
+                });
+                
+                if (result.isConfirmed) {
+                    const lockResult = await lockUSDT(parseFloat(amount), 'AD-' + Date.now());
+                    if (!lockResult.success) {
+                        throw new Error("فشل حجز العملات: " + lockResult.error);
+                    }
+                    
+                    await saveAdToDatabase(publishBtn, paymentMethod);
+                } else {
+                    // User cancelled, re-enable button
+                    publishBtn.disabled = false;
+                    publishBtn.textContent = 'نشر الإعلان';
+                    return;
+                }
+            } catch(e) { 
+                Swal.fire("فشل التحقق من المحفظة: " + e.message); 
+                publishBtn.disabled = false;
+                publishBtn.textContent = 'نشر الإعلان';
+                return;
+            }
+        }
+        
+        await saveAdToDatabase(publishBtn, paymentMethod);
+        
+    } catch(error) {
+        console.error('Publish ad error:', error);
+        Swal.fire('خطأ في نشر الإعلان: ' + error.message);
+        publishBtn.disabled = false;
+        publishBtn.textContent = 'نشر الإعلان';
+    }
+}
+
+async function saveAdToDatabase(publishBtn, paymentMethod) {
+    try {
+        const price = document.getElementById('priceIn').value.trim();
+        const amount = document.getElementById('amountIn').value.trim();
+        const min = document.getElementById('minIn').value.trim();
+        const max = document.getElementById('maxIn').value.trim();
+        const myAddr = tronWeb.defaultAddress.base58;
+        
+        // Data integrity - ensure all required fields are present with correct types
+        const adData = {
+            price: String(price), // Ensure string type
+            amount: String(amount), // Ensure string type
+            min: String(min), // Ensure string type
+            max: String(max), // Ensure string type
+            payMethod: String(paymentMethod), // Ensure string type
+            type: String(adFormMode), // Must be 'buy' or 'sell'
+            owner: String(myAddr), // Ensure string type (wallet address)
+            status: 'active', // Must be 'active' for new ads
+            createdAt: Number(Date.now()) // Ensure number type
+        };
+        
+        await db.collection("ads").add(adData);
+
+        Swal.fire({icon: 'success', title: 'تم النشر بنجاح', showConfirmButton: false, timer: 1500});
+        
+        // Clear form
+        document.getElementById('priceIn').value = '';
+        document.getElementById('amountIn').value = '';
+        document.getElementById('minIn').value = '';
+        document.getElementById('maxIn').value = '';
+        // Reset payment dropdown to default
+        document.getElementById('selectedPaymentText').textContent = 'Select payment method';
+        document.getElementById('paymentCheckmark').classList.add('hidden');
+        selectedPayment = '';
+        
+        navTo('p2p', 0);
+    } catch(error) {
+        console.error('Error saving ad:', error);
+        Swal.fire('حدث خطأ أثناء حفظ الإعلان: ' + error.message);
+    } finally {
+        publishBtn.disabled = false;
+        publishBtn.textContent = 'نشر الإعلان';
+    }
+}
+
+// --- [7. إنشاء طلب (Order) والتحقق من رصيد الطرف الآخر] ---
+async function createOrder(adId, owner, adType) {
+    if(!tronWeb) return Swal.fire("اربط محفظتك");
+    const myAddr = tronWeb.defaultAddress.base58;
+    if(myAddr === owner) return Swal.fire("لا يمكنك التداول مع نفسك!");
+
+    try {
+        const adSnap = await db.collection("ads").doc(adId).get();
+        const adData = adSnap.data();
+        
+        // Use Firestore transaction for atomic operations
+        await db.runTransaction(async (transaction) => {
+            const adRef = db.collection("ads").doc(adId);
+            const adDoc = await transaction.get(adRef);
+            
+            if (!adDoc.exists) {
+                throw new Error('Ad no longer exists');
+            }
+            
+            const currentAmount = parseFloat(adDoc.data().amount);
+            
+            // [أمان العمليات]: لو المشتري دخل على إعلان (أحمر) لبيع USDT للتاجر، لازم نتأكد من رصيد المشتري
+            if(adType === 'sell') {
+                const balance = await checkUSDTBalance(myAddr);
+                if(balance < currentAmount) {
+                    throw new Error('ليس لديك رصيد كافٍ لإتمام عملية البيع للتاجر');
+                }
+                
+                // Lock buyer's USDT for sell ads
+                const lockResult = await lockUSDT(currentAmount, 'ORDER-' + Date.now());
+                if (!lockResult.success) {
+                    throw new Error('فشل حجز العملات: ' + lockResult.error);
+                }
+            }
+            
+            // Decrease available amount atomically
+            const newAmount = Math.max(0, currentAmount - 1); // Assuming 1 USDT per order, adjust as needed
+            transaction.update(adRef, { amount: newAmount.toString() });
+            
+            // Create order
+            const oId = "ORD-" + Math.floor(100000 + Math.random() * 900000);
+            const orderRef = db.collection("orders").doc(oId);
+            transaction.set(orderRef, {
+                adId, adOwner: owner, taker: myAddr, type: adType,
+                status: 'pending', isPaid: false, createdAt: Date.now(),
+                amount: '1', // Default order amount
+                price: adData.price
+            });
+            
+            // Play notification sound
+            playNotificationSound('new_order');
+            
+            return oId;
+        });
+        
+        navTo('orders', 1);
+        
+    } catch (error) {
+        console.error('Create order error:', error);
+        Swal.fire('خطأ في إنشاء الطلب: ' + error.message);
+    }
+}
+
+// --- [8. إدارة الطلبات والشات والتحرير] ---
+function filterOrders(status, btn) {
+    currentOrderFilter = status;
+    document.querySelectorAll('#ordersPage button').forEach(b => b.classList.remove('tab-active', 'text-black'));
+    btn.classList.add('tab-active', 'text-black');
+    renderOrders();
+}
+
+function renderOrders() {
+    const list = document.getElementById('ordersList');
+    const myAddr = tronWeb?.defaultAddress?.base58;
+    if(!myAddr) return list.innerHTML = "<p class='text-center mt-10 text-gray-400'>سجل دخول أولاً</p>";
+
+    db.collection("orders").where("status", "==", currentOrderFilter).onSnapshot(async snap => {
+        const myOrders = snap.docs.filter(d => d.data().adOwner === myAddr || d.data().taker === myAddr);
+        if(myOrders.length === 0) { list.innerHTML = "<p class='text-center mt-10 text-gray-400 text-xs'>لا يوجد طلبات حالياً</p>"; return; }
+
+        let html = "";
+        for(let doc of myOrders) {
+            const o = doc.data();
+            const adDoc = await db.collection("ads").doc(o.adId).get();
+            const adData = adDoc.data() || { price: 0, amount: 0 };
+            
+            const isOwner = myAddr === o.adOwner;
+            const amIBuyer = (o.type === 'buy' && !isOwner) || (o.type === 'sell' && isOwner);
+            const amISeller = !amIBuyer;
+
+            html += `
+            <div class="p-4 border rounded-2xl bg-white card-shadow">
+                <div class="flex justify-between items-center border-b pb-2 mb-3">
+                    <span class="text-[10px] font-bold text-gray-400">#${doc.id} | ${o.type==='buy'?'شراء':'بيع'}</span>
+                    <div class="flex gap-2">
+                        <button onclick="openChat('${doc.id}', ${o.createdAt})" class="text-blue-600 text-[10px] font-bold bg-blue-50 px-3 py-1 rounded">
+                            <i class="fa-solid fa-comments"></i> المحادثة
+                        </button>
+                        <button onclick="openAppeal('${doc.id}')" class="text-orange-600 text-[10px] font-bold bg-orange-50 px-3 py-1 rounded">
+                            <i class="fa-solid fa-exclamation-triangle"></i> دعم فني
+                        </button>
+                    </div>
+                </div>
+                <div class="flex justify-between items-end">
+                    <div>
+                        <div class="text-lg font-black price-font">${adData.price} EGP</div>
+                        <div class="text-[11px] text-gray-500 font-medium">الكمية: ${o.amount || '1'} USDT</div>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        ${currentOrderFilter === 'pending' ? `
+                            ${amIBuyer && !o.isPaid ? `<button onclick="confirmPay('${doc.id}')" class="bg-black text-white px-5 py-2 rounded-lg text-xs font-bold">تم الدفع</button>` : ''}
+                            ${amISeller && o.isPaid ? `<button onclick="releaseCrypto('${doc.id}')" class="bg-green-600 text-white px-5 py-2 rounded-lg text-xs font-bold">تحرير العملات</button>` : ''}
+                            ${amISeller && !o.isPaid ? `<span class="text-orange-500 text-[10px] font-bold">انتظار الدفع...</span>` : ''}
+                            ${canCancelOrder(o, isOwner) ? `<button onclick="cancelReq('${doc.id}')" class="text-red-500 text-[9px] mt-1 font-bold">إلغاء الطلب</button>` : ''}
+                        ` : ''}
+                    </div>
+                </div>
+            </div>`;
+        }
+        list.innerHTML = html || "<p class='text-center text-gray-400 mt-10 text-xs'>لا يوجد طلبات حالياً</p>";
+    });
+}
+
+function canCancelOrder(order, isOwner) {
+    // In Sell Ads (Green): Only the Buyer can cancel
+    // In Buy Ads (Red): Only the Merchant can cancel
+    if (order.type === 'buy') {
+        return !isOwner; // Only buyer (taker) can cancel sell ads
+    } else {
+        return isOwner; // Only merchant (ad owner) can cancel buy ads
+    }
+}
+
+// --- [9. منطق الدردشة الفورية] ---
+let timerFrozen = false;
+
+function openChat(id, time) {
+    activeOrderId = id;
+    document.getElementById('chatOverlay').style.display = 'flex';
+    document.getElementById('chatHeaderName').innerText = "رقم الطلب: " + id;
+    
+    clearInterval(timerInt);
+    timerFrozen = false;
+    
+    timerInt = setInterval(() => {
+        if (timerFrozen) return; // Don't update if frozen
+        
+        const remain = (time + (15 * 60 * 1000)) - Date.now();
+        if(remain <= 0) { 
+            document.getElementById('timerDisplay').innerText = "انتهى الوقت";
+            document.getElementById('timerDisplay').className = "text-red-600 font-bold text-xs";
+            clearInterval(timerInt);
+            
+            // Auto-cancel order if time expires
+            db.collection("orders").doc(id).update({ status: 'cancelled' });
+        } else {
+            const m = Math.floor(remain / 60000), s = Math.floor((remain % 60000) / 1000);
+            document.getElementById('timerDisplay').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+            document.getElementById('timerDisplay').className = remain < 300000 ? "text-red-600 font-bold text-xs animate-pulse" : "text-red-600 font-bold text-xs";
+        }
+    }, 1000);
+
+    rtdb.ref('chats/' + id).on('value', snap => {
+        const data = snap.val() ? Object.values(snap.val()) : [];
+        const myAddr = tronWeb.defaultAddress.base58;
+        document.getElementById('chatBody').innerHTML = data.map(m => `
+            <div class="flex ${m.sender === myAddr ? 'justify-end' : 'justify-start'}">
+                <div class="max-w-[80%] p-3 rounded-2xl text-sm ${m.sender === myAddr ? 'bg-black text-white rounded-br-none' : 'bg-white border text-black rounded-bl-none shadow-sm'}">
+                    ${m.text}
+                    <div class="text-[9px] opacity-60 mt-1">${new Date(m.time).toLocaleTimeString('ar-EG')}</div>
+                </div>
+            </div>`).join('');
+        const b = document.getElementById('chatBody'); b.scrollTop = b.scrollHeight;
+    });
+}
+
+function sendMsg() {
+    const inp = document.getElementById('chatInput');
+    if(!inp.value || !activeOrderId) return;
+    rtdb.ref('chats/' + activeOrderId).push({ 
+        sender: tronWeb.defaultAddress.base58, 
+        text: inp.value, 
+        time: Date.now() 
+    });
+    inp.value = "";
+    
+    // Play notification for new message
+    playNotificationSound('new_message');
+}
+
+function closeChat() { 
+    document.getElementById('chatOverlay').style.display = 'none'; 
+    clearInterval(timerInt); 
+    timerFrozen = false;
+}
+
+// --- [10. عمليات الطلب] ---
+function confirmPay(id) { 
+    Swal.fire({
+        title: 'تأكيد الدفع؟',
+        text: 'بعد التأكيد سيتم تجميد المؤقت وانتظار تحرير العملات من التاجر',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'نعم، قمت بالدفع',
+        cancelButtonText: 'إلغاء'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            db.collection("orders").doc(id).update({ 
+                isPaid: true,
+                paidAt: Date.now()
+            });
+            
+            // Freeze the timer
+            timerFrozen = true;
+            document.getElementById('timerDisplay').innerText = "في انتظار التحرير";
+            document.getElementById('timerDisplay').className = "text-orange-600 font-bold text-xs";
+            
+            Swal.fire('تم تأكيد الدفع!', 'الرجاء انتظار تحرير العملات من التاجر', 'success');
+        }
+    });
+}
+
+async function releaseCrypto(id) {
+    Swal.fire({
+        title: 'تأكيد تحرير العملات؟',
+        text: 'سيتم تحرير USDT للمشتري فوراً',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'تحرير العملات',
+        cancelButtonText: 'إلغاء'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            const releaseResult = await releaseUSDT(id);
+            
+            if (releaseResult.success) {
+                await db.collection("orders").doc(id).update({ 
+                    status: 'completed',
+                    completedAt: Date.now()
+                });
+                Swal.fire("تم تحرير العملات بنجاح");
+            } else {
+                Swal.fire("فشل تحرير العملات: " + releaseResult.error);
+            }
+        }
+    });
+}
+
+function cancelReq(id) {
+    Swal.fire({
+        title: 'إلغاء الطلب؟',
+        text: 'سيتم إلغاء الطلب وإرجاع العملات المحجوزة',
+        icon: 'warning', 
+        showCancelButton: true,
+        confirmButtonText: 'تأكيد الإلغاء',
+        cancelButtonText: 'تراجع'
+    }).then(async (r) => {
+        if(r.isConfirmed) {
+            // In a real implementation, you would also call the smart contract to refund
+            await db.collection("orders").doc(id).update({ 
+                status: 'cancelled',
+                cancelledAt: Date.now()
+            });
+            Swal.fire('تم إلغاء الطلب');
+        }
+    });
+}
+
+function openAppeal(orderId) {
+    Swal.fire({
+        title: 'الدعم الفني',
+        html: `
+            <p>إذا واجهت أي مشكلة في هذا الطلب، يمكنك التواصل مع الدعم الفني:</p>
+            <a href="${TELEGRAM_SUPPORT_LINK}" target="_blank" 
+               class="bg-blue-500 text-white px-4 py-2 rounded-lg inline-block mt-3">
+                <i class="fa-brands fa-telegram"></i> فتح تذكرة دعم
+            </a>
+            <p class="text-xs text-gray-500 mt-2">رقم الطلب: ${orderId}</p>
+        `,
+        icon: 'info',
+        confirmButtonText: 'حسناً'
+    });
+}
+
+function playNotificationSound(type) {
+    if (!notificationAudio) return;
+    
+    try {
+        notificationAudio.currentTime = 0;
+        notificationAudio.play().catch(e => console.log('Audio play failed:', e));
+    } catch (error) {
+        console.log('Notification sound error:', error);
+    }
+}
+
+// --- [11. إدارة إعلاناتي] ---
+function filterMyAds(f, btn) {
+    currentAdFilter = f;
+    document.querySelectorAll('#adsPage .tab-active').forEach(b => b.classList.remove('tab-active'));
+    btn.classList.add('tab-active');
+    renderMyAds();
+}
+
+function renderMyAds() {
+    const container = document.getElementById('myAdsList');
+    const myAddr = tronWeb?.defaultAddress?.base58;
+    if(!myAddr) return;
+
+    db.collection("ads").where("owner", "==", myAddr).onSnapshot(snap => {
+        const ads = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        userAds = ads; // Populate userAds array for editAd function
+        const filtered = ads.filter(a => currentAdFilter === 'active' ? a.status === 'active' : a.status !== 'active');
+        document.getElementById('countActive').innerText = ads.filter(a => a.status === 'active').length;
+
+        // UI refresh - only show ads with valid data and use correct field names
+        const validAds = filtered.filter(a => a.price && a.amount && a.payMethod);
+        
+        if(validAds.length === 0) {
+            // OKX-style empty state
+            container.innerHTML = `
+                <div class="text-center py-20">
+                    <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fa-solid fa-bullhorn text-gray-400 text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-600 mb-2">لم يتم العثور على إعلانات</h3>
+                    <p class="text-sm text-gray-500 mb-6">أنشئ إعلاناً لشراء العملات الرقمية أو بيعها.</p>
+                    <button onclick="showPage('createAd')" class="text-white px-6 py-3 rounded-xl font-medium hover:bg-gray-700 transition-colors" style="background-color: #808080 !important;">
+                        <i class="fa-solid fa-plus ml-2"></i> إنشاء إعلان
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        // OKX-style ads display
+        container.innerHTML = validAds.map(a => {
+            const typeColor = a.type === 'buy' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
+            const typeText = a.type === 'buy' ? 'buying' : 'selling';
+            
+            return `
+                <div class="bg-white border border-gray-200 rounded-2xl p-4 hover:shadow-lg transition-shadow">
+                    <!-- Ad Header -->
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex items-center gap-2">
+                            <span class="${typeColor} px-3 py-1 rounded-full text-xs font-bold">${typeText}</span>
+                            <span class="text-gray-500 text-sm">منذ ${Math.floor((Date.now() - a.createdAt) / (1000 * 60 * 60 * 24))} يوم</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="editAd('${a.id}')" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                                <i class="fa-solid fa-pen"></i> learn
+                            </button>
+                            <button onclick="viewAdDetails('${a.id}')" class="text-gray-600 hover:text-gray-700 text-sm font-medium">
+                                <i class="fa-solid fa-eye"></i> تفاصيل
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Price Section -->
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl mb-3">
+                        <div class="flex items-baseline justify-between">
+                            <div>
+                                <span class="text-3xl font-black">${a.price}</span>
+                                <span class="text-lg text-gray-600 ml-1">EGP</span>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm text-gray-500">الكمية المتاحة</div>
+                                <div class="text-xl font-bold text-blue-600">${a.amount} <span class="text-sm font-normal">USDT</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Limits & Payment -->
+                    <div class="grid grid-cols-2 gap-4 mb-3">
+                        <div class="bg-gray-50 p-3 rounded-xl">
+                            <div class="text-xs text-gray-500 mb-1">الحدود</div>
+                            <div class="font-bold text-gray-800">${a.min} - ${a.max} EGP</div>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-xl">
+                            <div class="text-xs text-gray-500 mb-1">طريقة الدفع</div>
+                            <div class="font-bold text-gray-800">${a.payMethod || 'غير محدد'}</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Management Buttons -->
+                    <div class="flex justify-between items-center">
+                        <span class="${a.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'} px-3 py-1 rounded-full text-xs font-bold">
+                            ${a.status === 'active' ? 'نشط' : 'غير نشط'}
+                        </span>
+                        <div class="flex gap-2">
+                            <button onclick="editAd('${a.id}')" 
+                                    class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                                <i class="fa-solid fa-pen"></i> edit
+                            </button>
+                            <button onclick="confirmCancelAd('${a.id}')" 
+                                    class="text-red-600 hover:text-red-700 text-sm font-medium">
+                                <i class="fa-solid fa-times"></i> إلغاء
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    });
+}
+
+function toggleAd(id, cur) { db.collection("ads").doc(id).update({ status: cur === 'active' ? 'inactive' : 'active' }); }
+
+// Payment Dropdown Functions
+let selectedPayment = '';
+
+function togglePaymentDropdown() {
+    const dropdown = document.getElementById('paymentDropdown');
+    dropdown.classList.toggle('hidden');
+    
+    // Close dropdown when clicking outside
+    if (!dropdown.classList.contains('hidden')) {
+        setTimeout(() => {
+            document.addEventListener('click', closePaymentDropdown);
+        }, 100);
+    }
+}
+
+function closePaymentDropdown(e) {
+    const dropdown = document.getElementById('paymentDropdown');
+    const selector = document.getElementById('paymentSelector');
+    
+    if (!selector.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.classList.add('hidden');
+        document.removeEventListener('click', closePaymentDropdown);
+    }
+}
+
+function selectPayment(payment) {
+    selectedPayment = payment;
+    const dropdown = document.getElementById('paymentDropdown');
+    const selectorText = document.getElementById('selectedPaymentText');
+    const checkmark = document.getElementById('paymentCheckmark');
+    
+    selectorText.textContent = payment;
+    checkmark.classList.remove('hidden');
+    dropdown.classList.add('hidden');
+    document.removeEventListener('click', closePaymentDropdown);
+}
+
+window.onload = () => navTo('p2p', 0);
+</script>
+</body>
+</html>
